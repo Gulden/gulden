@@ -163,7 +163,7 @@ public:
     //but causes issues for mining
     //Disabled out of concern it may cause issues for others as well
     //re-enable once carefully looking into the below assertion.
-    //Munt-daemon: main.cpp:2341: bool ConnectBlock(const CBlock&, CValidationState&, CBlockIndex*, CCoinsViewCache&, const CChainParams&, bool): Assertion `hashPrevBlock == view.GetBestBlock()' failed.
+    //Gulden-daemon: main.cpp:2341: bool ConnectBlock(const CBlock&, CValidationState&, CBlockIndex*, CCoinsViewCache&, const CChainParams&, bool): Assertion `hashPrevBlock == view.GetBestBlock()' failed.
     //mutable uint256 cachedHash;
     uint256 GetHashLegacy() const;
 

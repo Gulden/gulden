@@ -5,10 +5,10 @@
   "author": "Malcolm MacLeod",
   "license": "GNU Lesser General Public License v3",
   "main": "main.js",
-  "homepage": "https://www.Munt.org",
+  "homepage": "https://www.gulden.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/muntorg/munt-official"
+    "url": "https://github.com/gulden/gulden"
   },
   "scripts": {
     "start": "electron ."

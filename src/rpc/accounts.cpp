@@ -3986,7 +3986,7 @@ static const CRPCCommand commandsSPV[] =
     { "mnemonics",               "listseeds",                       &listseeds,                      true,    {} },
 };
 
-void RegisterMuntRPCCommands(CRPCTable &t)
+void RegisterGuldenRPCCommands(CRPCTable &t)
 {
     if (!GetBoolArg("-spv", DEFAULT_SPV))
     {

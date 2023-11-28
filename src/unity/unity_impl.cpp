@@ -12,7 +12,7 @@
 #include "unity_impl.h"
 #include "libinit.h"
 
-// Standard munt headers
+// Standard gulden headers
 #include "appname.h"
 #include "clientversion.h"
 
@@ -1291,9 +1291,9 @@ void ILibraryController::DoRescan()
 
 UriRecipient ILibraryController::IsValidRecipient(const UriRecord & request)
 {
-     // return if URI is not valid or is no Munt: URI
+     // return if URI is not valid or is no Gulden: URI
     std::string lowerCaseScheme = boost::algorithm::to_lower_copy(request.scheme);
-    if (lowerCaseScheme != "munt")
+    if (lowerCaseScheme != "gulden")
         return UriRecipient(false, "", "", "", 0);
 
     if (!CNativeAddress(request.path).IsValid())

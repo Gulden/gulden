@@ -8,7 +8,7 @@ let walletPath = "";
 
 if (process.type !== "renderer") {
   if (os.platform() === "linux") {
-    walletPath = path.join(app.getPath("home"), isDevelopment ? ".munt_dev" : ".munt");
+    walletPath = path.join(app.getPath("home"), isDevelopment ? ".gulden_dev" : ".gulden");
   } else {
     walletPath = app.getPath("userData");
     if (isDevelopment) walletPath = walletPath + "_dev";

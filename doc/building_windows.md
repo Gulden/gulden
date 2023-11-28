@@ -12,8 +12,8 @@ It should also be possible to compile via msys or cygwin on windows, there are c
 Binaries
 -----
 There are binaries for every release, please reconsider your need to build and unless you have a very good reason to do so rather just download these.
-Latest binaries can always be found here: https://github.com/Munt/munt-official/releases
-Download the latest linux\*.tar.gz extract it and simply copy Munt-daemon out of it instead of going through the unnecessary hassle of building.
+Latest binaries can always be found here: https://github.com/gulden/gulden/releases
+Download the latest linux\*.tar.gz extract it and simply copy Gulden-daemon out of it instead of going through the unnecessary hassle of building.
 
 
 Installation of msys2
@@ -27,14 +27,14 @@ Installation of msys2
 
 Building under msys2 (nodejs addon)
 -----
-* `git clone https://github.com/muntorg/munt-official`
-* `cd munt-official`
+* `git clone https://github.com/gulden/gulden`
+* `cd gulden`
 * `./developer-tools/build_node.sh`
 
 Building under msys2
 -----
-* `git clone https://github.com/muntorg/munt-official`
-* `cd munt-official/depends`
+* `git clone https://github.com/gulden/gulden`
+* `cd gulden/depends`
 * `make`
 * `cd ..`
 * `./autogen.sh`
@@ -65,15 +65,15 @@ Install build prerequisites, git and some build dependencies
 
 Clone a copy of this repository
 
-`git clone https://github.com/muntorg/munt-official.git`
+`git clone https://github.com/gulden/gulden.git`
 
-`cd munt-official`
+`cd gulden`
 
 (Optional) If you want to contribute towards development you may want to check out a development branch
 
 `git checkout -b 2.1_development remotes/origin/2.1_development`
 
-Build Munt dependencies
+Build Gulden dependencies
 
 `cd depends`
 
@@ -81,7 +81,7 @@ Build Munt dependencies
 
 `cd ..`
 
-Build Munt
+Build Gulden
 
 `./autogen.sh`
 
@@ -139,7 +139,7 @@ After installing vcXsrv. Start XLaunch (with default settings) and then on WSL e
 
 `export DISPLAY=:0`
 
-`LD_LIBRARY_PATH=depends/x86_64-pc-linux-gnu/lib/ ./src/qt/Munt`
+`LD_LIBRARY_PATH=depends/x86_64-pc-linux-gnu/lib/ ./src/qt/Gulden`
 
 Modify the `LD_LIBRARY_PATH` as appropriate for your system.
 

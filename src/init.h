@@ -43,7 +43,7 @@ void InitAppSpecificDatadirParamaters();
 //!Parameter interaction: change current parameters depending on various rules
 void InitParameterInteraction();
 
-/** Initialize Munt: Basic context setup.
+/** Initialize Gulden: Basic context setup.
  *  @note This can be done before daemonization.
  *  @pre Parameters should be parsed and config file should be read.
  */
@@ -61,7 +61,7 @@ bool AppInitParameterInteraction();
  */
 bool AppInitSanityChecks();
 /**
- * Munt main initialization.
+ * Gulden main initialization.
  * @note This should only be done after daemonization.
  * @pre Parameters should be parsed and config file should be read, AppInitSanityChecks should have been called.
  */

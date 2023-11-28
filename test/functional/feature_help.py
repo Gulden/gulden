@@ -4,10 +4,10 @@
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Verify that starting with -h works as expected."""
 
-from test_framework.test_framework import MuntTestFramework
+from test_framework.test_framework import GuldenTestFramework
 from test_framework.util import assert_equal
 
-class HelpTest(MuntTestFramework):
+class HelpTest(GuldenTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 1

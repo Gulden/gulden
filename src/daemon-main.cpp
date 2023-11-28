@@ -47,8 +47,8 @@ using namespace boost::placeholders;
  *
  * \section intro_sec Introduction
  *
- * This is the developer documentation of the reference client for an experimental new digital currency called Munt (https://www.munt.org),
- * which enables instant payments to anyone, anywhere in the world. Munt uses peer-to-peer technology to operate
+ * This is the developer documentation of the reference client for an experimental new digital currency called Gulden (https://www.gulden.com),
+ * which enables instant payments to anyone, anywhere in the world. Gulden uses peer-to-peer technology to operate
  * with no central authority: managing transactions and issuing money are carried out collectively by the network.
  *
  * The software is a community-driven open source project, released under the GNU Lesser General Public License v3.

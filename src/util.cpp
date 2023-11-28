@@ -98,8 +98,8 @@
 #include <openssl/conf.h>
 
 
-const char * const DEFAULT_CONF_FILENAME = "munt.conf";
-const char * const DEFAULT_PID_FILENAME = "munt_daemon.pid";
+const char * const DEFAULT_CONF_FILENAME = "gulden.conf";
+const char * const DEFAULT_PID_FILENAME = "gulden_daemon.pid";
 
 ArgsManager gArgs;
 bool fPrintToConsole = false;
@@ -292,37 +292,6 @@ static void InterpretNegativeSetting(std::string& strKey, std::string& strValue)
 void ArgsManager::ParseParameters(int argc, const char* const argv[])
 {
     LOCK(cs_args);
-    //Temporary - migrate old wallet directoriess to new 'munt' wallet directories.
-    fs::path newPath = GetDefaultDataDir();
-    if (!fs::exists(newPath.string()))
-    {
-        try
-        {
-            std::string newPathString = newPath.string();
-            boost::replace_all(newPathString, "munt", "Gulden");
-            fs::path oldPath(newPathString);
-            if (fs::exists( oldPath.string() ))
-            {
-                fs::rename(oldPath.string(), newPath.string());
-                fs::rename((newPath/"gulden.conf").string(), (newPath/"munt.conf").string());
-                fs::rename((newPath/"Gulden.conf").string(), (newPath/"munt.conf").string());
-            }
-        }
-        catch(...){}
-        try
-        {
-            std::string newPathString = newPath.string();
-            boost::replace_all(newPathString, "munt", "gulden");
-            fs::path oldPath(newPathString);
-            if (fs::exists( oldPath.string() ))
-            {
-                fs::rename(oldPath.string(), newPath.string());
-                fs::rename((newPath/"guldencoin.conf").string(), (newPath/"munt.conf").string());
-                fs::rename((newPath/"Guldencoin.conf").string(), (newPath/"munt.conf").string());
-            }
-        }
-        catch(...){}
-    }
 
     mapArgs.clear();
     mapMultiArgs.clear();
@@ -470,13 +439,13 @@ fs::path GetDefaultDataDir()
     if (!defaultDataDirOverride.empty())
         return defaultDataDirOverride;
 
-    // Windows < Vista: C:\Documents and Settings\Username\Application Data\munt
-    // Windows >= Vista: C:\Users\Username\AppData\Roaming\munt
-    // Mac: ~/Library/Application Support/munt
-    // Unix: ~/.munt
+    // Windows < Vista: C:\Documents and Settings\Username\Application Data\gulden
+    // Windows >= Vista: C:\Users\Username\AppData\Roaming\gulden
+    // Mac: ~/Library/Application Support/gulden
+    // Unix: ~/.gulden
 #ifdef WIN32
     // Windows
-    return GetSpecialFolderPath(CSIDL_APPDATA) / "munt";
+    return GetSpecialFolderPath(CSIDL_APPDATA) / "gulden";
 #else
     fs::path pathRet;
     char* pszHome = getenv("HOME");
@@ -486,10 +455,10 @@ fs::path GetDefaultDataDir()
         pathRet = fs::path(pszHome);
 #ifdef MAC_OSX
     // Mac
-    return pathRet / "Library/Application Support/munt";
+    return pathRet / "Library/Application Support/gulden";
 #else
     // Unix
-    return pathRet / ".munt";
+    return pathRet / ".gulden";
 #endif
 #endif
 }
@@ -550,7 +519,7 @@ void ArgsManager::ReadConfigFile(const std::string& confPath)
     static bool fRegTestLegacy = IsArgSet("-regtestlegacy");
     fs::ifstream streamConfig(GetConfigFile(confPath));
     if (!streamConfig.good())
-        return; // No munt.conf file is OK
+        return; // No gulden.conf file is OK
 
     {
         LOCK(cs_args);
@@ -559,7 +528,7 @@ void ArgsManager::ReadConfigFile(const std::string& confPath)
 
         for (boost::program_options::detail::config_file_iterator it(streamConfig, setOptions), end; it != end; ++it)
         {
-            // Don't overwrite existing settings so command line settings override munt.conf
+            // Don't overwrite existing settings so command line settings override gulden.conf
             std::string strKey = std::string("-") + it->string_key;
             std::string strValue = it->value[0];
             if (fRegTest)

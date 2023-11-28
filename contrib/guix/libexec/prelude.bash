@@ -66,7 +66,7 @@ time-machine() {
 ################
 
 VERSION="${FORCE_VERSION:-$(git_head_version)}"
-DISTNAME="${DISTNAME:-munt-${VERSION}}"
+DISTNAME="${DISTNAME:-gulden-${VERSION}}"
 
 version_base_prefix="${PWD}/guix-build-"
 VERSION_BASE="${version_base_prefix}${VERSION}"  # TOP

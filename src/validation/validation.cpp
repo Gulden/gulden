@@ -138,7 +138,7 @@ static void CheckBlockIndex(const Consensus::Params& consensusParams);
 /** Constant stuff for coinbase transactions we create: */
 CScript COINBASE_FLAGS;
 
-const std::string strMessageMagic = "Munt Signed Message:\n";
+const std::string strMessageMagic = "Gulden Signed Message:\n";
 
 std::set<CBlockIndex*, CBlockIndexWorkComparator> setBlockIndexCandidates;
 
@@ -1017,7 +1017,7 @@ bool ConnectBlock(CChain& chain, const CBlock& block, CValidationState& state, C
     // Now that the whole chain is irreversibly beyond that time it is applied to all blocks except the
     // two in the chain that violate it. This prevents exploiting the issue against nodes during their
     // initial block download.
-    //Munt: BIP30 always true for us.
+    //Gulden: BIP30 always true for us.
     bool fEnforceBIP30 = true;
 /*
     bool fEnforceBIP30 = (!pindex->phashBlock) || // Enforce on CreateNewBlock invocations which don't have a hash.
@@ -2214,7 +2214,7 @@ bool ActivateBestChain(CValidationState &state, const CChainParams& chainparams,
                 pindexMostWork = FindMostWorkChain();
             }
 
-            // Munt - This is PoW2 related (unwitnessed blocks sit ahead of the chain tip with 0 extra chain work until they are activated).
+            // Gulden - This is PoW2 related (unwitnessed blocks sit ahead of the chain tip with 0 extra chain work until they are activated).
             if (pindexMostWork && pindexMostWork->pprev && pindexMostWork->nChainWork == pindexMostWork->pprev->nChainWork)
                 pindexMostWork = pindexMostWork->pprev;
 
@@ -3056,7 +3056,7 @@ bool ContextualCheckBlock(const CBlock& block, CValidationState& state, const CC
         }
     }
 
-    //NB!! MUNT - segwit commits/adds a coinbase commitment here.
+    //NB!! GULDEN - segwit commits/adds a coinbase commitment here.
     //For segsig this is unnecessary; we hash this data as part of the normal merkle root instead.
 
     //fixme: (PHASE5) Below checks can be removed/simplified

@@ -17,7 +17,7 @@
 #include "tinyformat.h"
 #include "util/strencodings.h"
 
-//Munt
+//Gulden
 #include <primitives/transaction.h>
 
 const char* GetOpName(opcodetype opcode)

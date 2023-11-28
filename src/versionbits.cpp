@@ -12,7 +12,7 @@
 #include "versionbits.h"
 #include "consensus/params.h"
 
-//Munt
+//Gulden
 #include "witnessutil.h"
 #include "validation/validation.h"
 

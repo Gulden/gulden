@@ -2790,7 +2790,7 @@ class LibUnity {
       console.log(`IPC: BackendUtilities.GetBuySessionUrl()`);
       event.returnValue = {
         success: true,
-        result: "https://munt.org/buy"
+        result: "https://gulden.com/buy"
       };
     });
 
@@ -2798,7 +2798,7 @@ class LibUnity {
       console.log(`IPC: BackendUtilities.GetSellSessionUrl()`);
       event.returnValue = {
         success: true,
-        result: "https://munt.org/sell"
+        result: "https://gulden.com/sell"
       };
     });
 

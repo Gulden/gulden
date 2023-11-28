@@ -153,51 +153,6 @@ int InitUnity()
         }
 
         std::string walletFile = GetArg("-wallet", DEFAULT_WALLET_DAT);
-        if (!fs::exists(GetDataDir() / walletFile))
-        {
-            //Temporary - migrate old 'Gulden' wallets to new 'Munt' wallets.
-            try
-            {
-                std::string newPathString = GetDataDir().string();
-                std::string oldPathString = newPathString;
-
-                boost::replace_all(oldPathString, "Munt", "Gulden");
-                boost::replace_all(oldPathString, "munt", "Gulden");
-                boost::filesystem::path oldPath(oldPathString);
-                if (fs::exists( (oldPath / walletFile).string() ))
-                {
-                    for(auto& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(oldPath), {}))
-                    {
-                        try { fs::rename((oldPath / entry.path().filename()).string(), (GetDataDir() / entry.path().filename()).string() ); } catch(...) {}
-                    }
-                    boost::filesystem::path newPath(newPathString); 
-                    if (fs::exists(GetDataDir() / "gulden.conf"))
-                        fs::rename((GetDataDir() / "gulden.conf").string(), (GetDataDir() / "munt.conf").string());
-                    if (fs::exists(GetDataDir() / "Gulden.conf"))
-                        fs::rename((GetDataDir() / "Gulden.conf").string(), (GetDataDir() / "munt.conf").string());
-                }
-                else
-                {
-                    std::string newPathString = GetDataDir().string();
-                    std::string oldPathString = newPathString;
-                    boost::replace_all(oldPathString, "Munt", "gulden");
-                    boost::replace_all(oldPathString, "munt", "gulden");
-                    oldPath = boost::filesystem::path(boost::filesystem::path(oldPathString));
-                    if (fs::exists( (oldPath / walletFile).string() ))
-                    {
-                        for(auto& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(oldPath), {}))
-                        {
-       	                    try { fs::rename((oldPath / entry.path().filename()).string(), (GetDataDir() / entry.path().filename()).string() ); } catch(...) {}
-                        }
-                        if (fs::exists(GetDataDir() / "gulden.conf"))
-	                    fs::rename((GetDataDir() / "gulden.conf").string(), (GetDataDir() / "munt.conf").string());
-                        if (fs::exists(GetDataDir() / "Gulden.conf"))
-                            fs::rename((GetDataDir() / "Gulden.conf").string(), (GetDataDir() / "munt.conf").string());
-                    }
-                }
-            }
-            catch(...){}
-        }
 
         // Set this early so that parameter interactions go to console
         InitLogging();
@@ -205,7 +160,7 @@ int InitUnity()
 
         //fixme: (UNITY) - This is now duplicated, factor this out into a common helper.
         // NB! This has to happen before we deamonise
-        // Make sure only a single Munt process is using the data directory.
+        // Make sure only a single Gulden process is using the data directory.
         {
             fs::path pathLockFile = GetDataDir() / ".lock";
             FILE* file = fopen(pathLockFile.string().c_str(), "a"); // empty lock file; created if it doesn't exist.

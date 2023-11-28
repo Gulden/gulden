@@ -27,7 +27,7 @@ let winDebug;
 let winAbout;
 let libUnity = new LibUnity({ walletPath });
 
-// Handle URI links (munt: munt://)
+// Handle URI links (gulden: gulden://)
 // If we are launching a second instance then terminate and let the first instance handle it instead
 //NB! This must happen before all other app related code (especially libulden init) as otherwise second process can crash
 const gotTheLock = app.requestSingleInstanceLock();
@@ -45,14 +45,14 @@ if (!gotTheLock) {
 }
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient("munt", process.execPath, [path.resolve(process.argv[1])]);
+    app.setAsDefaultProtocolClient("gulden", process.execPath, [path.resolve(process.argv[1])]);
   }
 } else {
-  app.setAsDefaultProtocolClient("munt");
+  app.setAsDefaultProtocolClient("gulden");
 }
 // End of URI handling
 
-/* TODO: refactor into function and add option to libmunt to remove existing wallet folder */
+/* TODO: refactor into function and add option to libgulden to remove existing wallet folder */
 if (isDevelopment) {
   let args = process.argv.slice(2);
   for (var i = 0; i < args.length; i++) {
@@ -80,7 +80,7 @@ function createMainWindow() {
     height: 600,
     minHeight: 600,
     show: false,
-    title: "Munt",
+    title: "Gulden",
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
@@ -182,7 +182,7 @@ function createDebugWindow() {
     minHeight: 400,
     show: false,
     parent: winMain,
-    title: "Munt Debug Window",
+    title: "Gulden Debug Window",
     skipTaskBar: true,
     autoHideMenuBar: true,
     webPreferences: {
@@ -240,7 +240,7 @@ function createAboutWindow() {
     minHeight: 400,
     show: false,
     parent: winMain,
-    title: "About Munt",
+    title: "About Gulden",
     skipTaskBar: true,
     autoHideMenuBar: true,
     webPreferences: {
@@ -340,9 +340,9 @@ app.on("ready", async () => {
 
 async function updateRate(seconds) {
   try {
-    // use blockhut api instead of https://api.munt.org/api/v1/ticker
-    //const response = await axios.get("https://blockhut.com/munt/munteuro.json");
-    const response = await axios.get("https://munt.chainviewer.org/api/v1/ticker");
+    // use blockhut api instead of https://api.gulden.com/api/v1/ticker
+    //const response = await axios.get("https://blockhut.com/gulden/guldeneuro.json");
+    const response = await axios.get("https://gulden.chainviewer.org/api/v1/ticker");
     const currentRate = response.data.data.find(item => item.code.toLowerCase() === store.state.app.currency.value.toLowerCase());
 
     store.dispatch("app/SET_RATE", currentRate.rate);

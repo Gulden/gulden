@@ -140,9 +140,9 @@ class SyncService : Service(), UnityCore.Observer
 
 
             builder = NotificationCompat.Builder(this, channelID)
-                .setContentTitle("Munt")
-                .setTicker("Munt")
-                .setContentText("Munt")
+                .setContentTitle("Gulden")
+                .setTicker("Gulden")
+                .setContentText("Gulden")
                 .setSmallIcon(R.drawable.ic_logo)
                 .setContentIntent(pendingIntent)
                 .setOngoing(true)

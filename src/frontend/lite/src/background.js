@@ -26,7 +26,7 @@ let winMain;
 let winDebug;
 let libUnity = new LibUnity({ walletPath });
 
-// Handle URI links (munt: muntlite://)
+// Handle URI links (gulden: guldenlite://)
 // If we are launching a second instance then terminate and let the first instance handle it instead
 //NB! This must happen before all other app related code (especially libulden init) as otherwise second process can crash
 const gotTheLock = app.requestSingleInstanceLock();
@@ -44,14 +44,14 @@ if (!gotTheLock) {
 }
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient("muntlite", process.execPath, [path.resolve(process.argv[1])]);
+    app.setAsDefaultProtocolClient("guldenlite", process.execPath, [path.resolve(process.argv[1])]);
   }
 } else {
-  app.setAsDefaultProtocolClient("muntlite");
+  app.setAsDefaultProtocolClient("guldenlite");
 }
 // End of URI handling
 
-/* TODO: refactor into function and add option to libmunt to remove existing wallet folder */
+/* TODO: refactor into function and add option to libgulden to remove existing wallet folder */
 if (isDevelopment) {
   let args = process.argv.slice(2);
   for (var i = 0; i < args.length; i++) {
@@ -79,7 +79,7 @@ function createMainWindow() {
     height: 600,
     minHeight: 600,
     show: false,
-    title: "Munt-lite",
+    title: "Gulden-lite",
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
@@ -175,7 +175,7 @@ function createDebugWindow() {
     minHeight: 400,
     show: false,
     parent: winMain,
-    title: "Munt Debug Window",
+    title: "Gulden Debug Window",
     skipTaskBar: true,
     autoHideMenuBar: true,
     webPreferences: {
@@ -275,10 +275,10 @@ app.on("ready", async () => {
 
 async function updateRate(seconds) {
   try {
-    // use blockhut api instead of https://api.munt.org/api/v1/ticker
-    const response = await axios.get("https://blockhut.com/munt/munteuro.json");
+    // use blockhut api instead of https://api.gulden.com/api/v1/ticker
+    const response = await axios.get("https://blockhut.com/gulden/guldeneuro.json");
 
-    store.dispatch("app/SET_RATE", response.data.eurmunt);
+    store.dispatch("app/SET_RATE", response.data.eurgulden);
   } catch (error) {
     console.error(error);
   } finally {

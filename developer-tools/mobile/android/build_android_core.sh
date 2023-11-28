@@ -6,9 +6,9 @@ set -x
 source `dirname $0`/ndk_definitions.conf
 
 #Load private config
-MUNT_DEVTOOLS_CONF=${MUNT_DEVTOOLS_CONF:-developer-tools/private.conf}
-if [ -f $MUNT_DEVTOOLS_CONF ]; then
-  source ${MUNT_DEVTOOLS_CONF}
+GULDEN_DEVTOOLS_CONF=${GULDEN_DEVTOOLS_CONF:-developer-tools/private.conf}
+if [ -f $GULDEN_DEVTOOLS_CONF ]; then
+  source ${GULDEN_DEVTOOLS_CONF}
 fi
 
 TARGETS_PATH=$(dirname ${BASH_SOURCE[0]})/build_targets

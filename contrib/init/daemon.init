@@ -1,29 +1,29 @@
 #!/bin/bash
 #
-#  Munt-daemon The Munt core server.
+#  Gulden-daemon The Gulden core server.
 #
 #
 # chkconfig: 345 80 20
-# description: Munt-daemon
-# processname: Munt-daemon
+# description: Gulden-daemon
+# processname: Gulden-daemon
 #
 
 # Source function library.
 . /etc/init.d/functions
 
-# you can override defaults in /etc/sysconfig/munt_daemon, see below
-if [ -f /etc/sysconfig/munt_daemon ]; then
-        . /etc/sysconfig/munt_daemon
+# you can override defaults in /etc/sysconfig/gulden_daemon, see below
+if [ -f /etc/sysconfig/gulden_daemon ]; then
+        . /etc/sysconfig/gulden_daemon
 fi
 
 RETVAL=0
 
-prog=Munt-daemon
-# you can override the lockfile via DAEMON_LOCKFILE in /etc/sysconfig/munt_daemon
-lockfile=${DAEMON_LOCKFILE-/var/lock/subsys/munt_daemon}
+prog=Gulden-daemon
+# you can override the lockfile via DAEMON_LOCKFILE in /etc/sysconfig/gulden_daemon
+lockfile=${DAEMON_LOCKFILE-/var/lock/subsys/gulden_daemon}
 
-# daemon bin defaults to /usr/bin/Munt-daemon, override with DAEMON_BIN
-daemon_bin=${DAEMON_BIN-/usr/bin/Munt-daemon}
+# daemon bin defaults to /usr/bin/Gulden-daemon, override with DAEMON_BIN
+daemon_bin=${DAEMON_BIN-/usr/bin/Gulden-daemon}
 
 # daemon opts default to -disablewallet, override with DAEMON_OPTS
 daemon_opts=${DAEMON_OPTS--disablewallet}

@@ -25,7 +25,7 @@
     "back": "Terug",
     "buy": "Koop",
     "sell": "Verkoop",
-    "buy_your_first_coins": "Koop Munt",
+    "buy_your_first_coins": "Koop Gulden",
     "clear": "Wissen",
     "confirm": "Bevestig",
     "cancel": "Annuleren",
@@ -64,11 +64,11 @@
     "password": "Wachtwoord",
     "receiving_address": "Ontvangstadres",
     "days": "Dagen",
-    "ticker_symbol": "MUNT"
+    "ticker_symbol": "NLG"
   },
   "new_wallet": {
-    "title": "Welkom bij jouw Munt wallet",
-    "information": "Deze wallet staat alleen op jouw apparaat.\nGeef nooit iemand anders toegang tot jouw wallet.\nBewaar de herstelzin die je te zien krijgt tijdens installatie op een veilige plek.\nHerstelzin kwijt of iemand toegang tot je herstelzin = Munt weg."
+    "title": "Welkom bij jouw Gulden wallet",
+    "information": "Deze wallet staat alleen op jouw apparaat.\nGeef nooit iemand anders toegang tot jouw wallet.\nBewaar de herstelzin die je te zien krijgt tijdens installatie op een veilige plek.\nHerstelzin kwijt of iemand toegang tot je herstelzin = Gulden weg."
   },
   "saving_account": {
     "compound_earnings": "Cumulatieve Inkomsten",
@@ -93,7 +93,7 @@
   },
   "loader": {
     "shutdown": "Bezig met afsluiten...",
-    "synchronizing": "Jouw wallet is aan het synchroniseren met het Munt netwerk. Dit kan enige tijd duren."
+    "synchronizing": "Jouw wallet is aan het synchroniseren met het Gulden netwerk. Dit kan enige tijd duren."
   },
   "mining": {
     "arena_setup_time": "Arena setup tijd",
@@ -136,12 +136,12 @@
     "recover_existing": "Ik wil mijn wallet herstellen met mijn herstelzin",
     "repeat_password": "Herhaal wachtwoord",
     "repeat_your_recovery_phrase": "Voer jouw herstelzin in om te controleren dat je deze goed hebt opgeschreven.",
-    "setup_your_wallet": "Installeer jouw Munt wallet",
-    "this_is_your_recovery_phrase": "Dit is jouw herstelzin. Bewaar de herstelzin op een veilige plek. Zin kwijt of iemand toegang tot je zin = Munt weg."
+    "setup_your_wallet": "Installeer jouw Gulden wallet",
+    "this_is_your_recovery_phrase": "Dit is jouw herstelzin. Bewaar de herstelzin op een veilige plek. Zin kwijt of iemand toegang tot je zin = Gulden weg."
   },
   "setup_mining": {
     "title": "Mining instellen",
-    "information": "Voordat je kunt beginnen met minen van Munt moet een mining rekening worden aangemaakt. Voer je wachtwoord in om je wallet te ontgrendelen en een mining rekening aan te maken."
+    "information": "Voordat je kunt beginnen met minen van Gulden moet een mining rekening worden aangemaakt. Voer je wachtwoord in om je wallet te ontgrendelen en een mining rekening aan te maken."
   },
   "transaction_details": {
     "title": {
@@ -152,15 +152,15 @@
   },
   "receive_coins": {
     "address_copied_to_clipboard": "Adres gekopieërd naar klembord",
-    "buy_or_receive_coins": "Koop of ontvang Munt",
+    "buy_or_receive_coins": "Koop of ontvang Gulden",
     "click_to_copy_qr": "Klik om QR te kopiëren",
     "information": "Na iedere transactie krijg je een nieuw adres, maar het vorige adres blijft werken.",
-    "your_address": "Jouw Munt adres",
+    "your_address": "Jouw Gulden adres",
     "qr_copied_to_clipboard": "QR gekopieërd naar klembord"
   },
   "send_coins": {
     "enter_label": "Voer label in",
-    "enter_coins_address": "Voer Munt adres in",
+    "enter_coins_address": "Voer Gulden adres in",
     "confirm_transaction": "Bevestig transactie",
     "target_account": "Verstuur naar rekening",
     "fee_will_be_subtracted": "De transactie fee wordt van het bedrag afgehaald",
@@ -172,7 +172,7 @@
   "link_saving_account": {
     "title": "Jouw witness key",
     "information": "Gebruik je witness key alleen voor vertrouwde cloud witness services. Jouw witness key geeft toegang tot jouw beloningen, laat deze dus nooit aan andere mensen zien.",
-    "no_funds": "Witness rekening moet worden gevuld met vastgezette Munt voordat het mogelijk is om deze te koppelen met andere wallets."
+    "no_funds": "Witness rekening moet worden gevuld met vastgezette Gulden voordat het mogelijk is om deze te koppelen met andere wallets."
   },
   "peers": {
     "node_id": "Node ID",

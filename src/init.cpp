@@ -394,7 +394,7 @@ extern std::string HelpMessage(HelpMessageMode mode);
 
 std::string LicenseInfo()
 {
-    const std::string URL_WEBSITE = "<https://Munt.org>";
+    const std::string URL_WEBSITE = "<https://gulden.com>";
 
     //fixme: (FUT) Mention additional libraries, boost etc.
     //fixme: (FUT) Translate
@@ -577,7 +577,7 @@ static void ThreadImport(std::vector<fs::path> vImportFiles)
 }
 
 /** Sanity checks
- *  Ensure that Munt is running in a usable environment with all
+ *  Ensure that Gulden is running in a usable environment with all
  *  necessary library support.
  */
 static bool InitSanityCheck(void)
@@ -997,7 +997,7 @@ bool AppInitParameterInteraction()
     if (!CWallet::ParameterInteraction())
         return false;
 #endif
-    //Munt - generate private/public key pair for alert or checkpoint system
+    //Gulden - generate private/public key pair for alert or checkpoint system
     if (IsArgSet("-genkeypair"))
     {
         ECC_Start();
@@ -1076,10 +1076,10 @@ static bool LockDataDirectory(bool probeOnly)
 {
     std::string strDataDir = GetDataDir().string();
 
-    // Make sure only a single Munt process is using the data directory.
+    // Make sure only a single Gulden process is using the data directory.
     //fixme: (POST-PHASE5)
     (unused) probeOnly;
-    /* (MUNT) - we do this elsewhere (MERGE) look into this again.
+    /* (GULDEN) - we do this elsewhere (MERGE) look into this again.
     FILE* file = fsbridge::fopen(pathLockFile, "a"); // empty lock file; created if it doesn't exist.
     if (file) fclose(file);
 
@@ -1496,7 +1496,7 @@ bool AppInitMain(boost::thread_group& threadGroup, node::NodeContext& node)
                 pcoinsdbview->WriteVersion();
                 
 
-                //MUNT - version 2.0 upgrade
+                //GULDEN - version 2.0 upgrade
                 if (upgradeOnceOnly && pcoinsdbview->nPreviousVersion < pcoinsdbview->nCurrentVersion)
                 {
                     if (fullResyncForUpgrade)

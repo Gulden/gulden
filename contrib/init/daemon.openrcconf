@@ -1,23 +1,23 @@
-# /etc/conf.d/munt_daemon: config file for /etc/init.d/munt_daemon
+# /etc/conf.d/gulden_daemon: config file for /etc/init.d/gulden_daemon
 
 # Config file location
-#DAEMON_CONFIGFILE="/etc/munt/munt.conf"
+#DAEMON_CONFIGFILE="/etc/gulden/gulden.conf"
 
 # What directory to write pidfile to?  (created and owned by $DAEMON_USER)
-#DAEMON_PIDDIR="/var/run/munt_daemon"
+#DAEMON_PIDDIR="/var/run/gulden_daemon"
 
 # What filename to give the pidfile
-#DAEMON_PIDFILE="${DAEMON_PIDDIR}/munt_daemon.pid"
+#DAEMON_PIDFILE="${DAEMON_PIDDIR}/gulden_daemon.pid"
 
 # Where to write data (be mindful that the blockchain is large)
-#DAEMON_DATADIR="/var/lib/munt_daemon"
+#DAEMON_DATADIR="/var/lib/gulden_daemon"
 
 # User and group to own process
-#DAEMON_USER="munt"
-#DAEMON_GROUP="munt"
+#DAEMON_USER="gulden"
+#DAEMON_GROUP="gulden"
 
 # Path to executable
-#DAEMON_BIN="/usr/bin/Munt-daemon"
+#DAEMON_BIN="/usr/bin/Gulden-daemon"
 
 # Nice value to run under
 #DAEMON_NICE=0

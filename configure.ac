@@ -1,13 +1,13 @@
 AC_PREREQ([2.69])
-define(_CLIENT_VERSION_MAJOR,       3)
+define(_CLIENT_VERSION_MAJOR,       4)
 define(_CLIENT_VERSION_MINOR,       0)
 define(_CLIENT_VERSION_REVISION, 0)
-define(_CLIENT_VERSION_BUILD,       7)
+define(_CLIENT_VERSION_BUILD,       0)
 define(_CLIENT_VERSION_IS_RELEASE, false)
-define(_COPYRIGHT_YEAR, 2022)
+define(_COPYRIGHT_YEAR, 2023)
 define(_COPYRIGHT_HOLDERS,[The %s developers])
 define(_COPYRIGHT_HOLDERS_SUBSTITUTION,[[Centure]])
-AC_INIT([Munt],[_CLIENT_VERSION_MAJOR._CLIENT_VERSION_MINOR._CLIENT_VERSION_REVISION],[info@munt.org],[Munt])
+AC_INIT([Gulden],[_CLIENT_VERSION_MAJOR._CLIENT_VERSION_MINOR._CLIENT_VERSION_REVISION],[info@Gulden.com],[Gulden])
 AC_CONFIG_SRCDIR([src/init.cpp])
 AC_CONFIG_HEADERS([src/config/build-config.h])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -19,10 +19,10 @@ if test "$PKG_CONFIG" = ""; then
   AC_MSG_ERROR([pkg-config not found])
 fi
 
-m4_define([_DAEMON_NAME], [Munt-daemon])
-m4_define([_CLI_NAME], [Munt-cli])
-m4_define([_GUI_NAME], [Munt])
-m4_define([_TX_NAME], [Munt-tx])
+m4_define([_DAEMON_NAME], [Gulden-daemon])
+m4_define([_CLI_NAME], [Gulden-cli])
+m4_define([_GUI_NAME], [Gulden])
+m4_define([_TX_NAME], [Gulden-tx])
 [_DAEMON_NAME]=_DAEMON_NAME
 [_CLI_NAME]=_CLI_NAME
 [_GUI_NAME]=_GUI_NAME
@@ -1093,7 +1093,7 @@ fi
 
 AM_CONDITIONAL([ENABLE_ZMQ], [test "$use_zmq" = "yes"])
 
-AC_MSG_CHECKING([whether to build test_munt])
+AC_MSG_CHECKING([whether to build test_gulden])
 if test "$use_tests" = "yes"; then
   AC_MSG_RESULT([yes])
   BUILD_TEST="yes"

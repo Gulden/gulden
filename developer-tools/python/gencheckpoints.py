@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """Generate C++ code for the compiled-in checkpoints.
-   Script will connect to Munt rpc server.
+   Script will connect to Gulden rpc server.
    Generated code goes into chainparams.cpp
 """
 

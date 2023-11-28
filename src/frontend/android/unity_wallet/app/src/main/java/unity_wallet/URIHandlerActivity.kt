@@ -50,7 +50,7 @@ class URIHandlerActivity : AppBaseActivity()
         uri?.run {
             scheme?.run {
                 lowercase().run {
-                    return startsWith("munt")
+                    return startsWith("gulden")
                             || startsWith("iban")
                             || startsWith("sepa")
                 }

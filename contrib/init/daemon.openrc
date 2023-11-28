@@ -2,26 +2,26 @@
 
 # backward compatibility for existing gentoo layout 
 #
-if [ -d "/var/lib/munt/.munt" ]; then
-	DAEMON_DEFAULT_DATADIR="/var/lib/munt/.munt"
+if [ -d "/var/lib/gulden/.gulden" ]; then
+	DAEMON_DEFAULT_DATADIR="/var/lib/gulden/.gulden"
 else
-	DAEMON_DEFAULT_DATADIR="/var/lib/munt_daemon"
+	DAEMON_DEFAULT_DATADIR="/var/lib/gulden_daemon"
 fi
 
-DAEMON_CONFIGFILE=${DAEMON_CONFIGFILE:-/etc/munt/munt.conf}
-DAEMON_PIDDIR=${DAEMON_PIDDIR:-/var/run/munt_daemon}
-DAEMON_PIDFILE=${DAEMON_PIDFILE:-${DAEMON_PIDDIR}/munt_daemon.pid}
+DAEMON_CONFIGFILE=${DAEMON_CONFIGFILE:-/etc/gulden/gulden.conf}
+DAEMON_PIDDIR=${DAEMON_PIDDIR:-/var/run/gulden_daemon}
+DAEMON_PIDFILE=${DAEMON_PIDFILE:-${DAEMON_PIDDIR}/gulden_daemon.pid}
 DAEMON_DATADIR=${DAEMON_DATADIR:-${DAEMON_DEFAULT_DATADIR}}
-DAEMON_USER=${DAEMON_USER:-${DAEMON_USER:-munt}}
-DAEMON_GROUP=${DAEMON_GROUP:-munt}
-DAEMON_BIN=${DAEMON_BIN:-/usr/bin/Munt-daemon}
+DAEMON_USER=${DAEMON_USER:-${DAEMON_USER:-gulden}}
+DAEMON_GROUP=${DAEMON_GROUP:-gulden}
+DAEMON_BIN=${DAEMON_BIN:-/usr/bin/Gulden-daemon}
 DAEMON_NICE=${DAEMON_NICE:-${NICELEVEL:-0}}
 DAEMON_OPTS="${DAEMON_OPTS:-${DAEMON_OPTS}}"
 
-name="Munt Core Daemon"
-description="Munt cryptocurrency P2P network daemon"
+name="Gulden Core Daemon"
+description="Gulden cryptocurrency P2P network daemon"
 
-command="/usr/bin/Munt-daemon"
+command="/usr/bin/Gulden-daemon"
 command_args="-pid=\"${DAEMON_PIDFILE}\" \
 		-conf=\"${DAEMON_CONFIGFILE}\" \
 		-datadir=\"${DAEMON_DATADIR}\" \
@@ -84,7 +84,7 @@ checkconfig()
 		eerror "It is also recommended that you also set alertnotify so you are "
 		eerror "notified of problems:"
 		eerror ""
-		eerror "ie: alertnotify=echo %%s | mail -s \"Munt Alert\"" \
+		eerror "ie: alertnotify=echo %%s | mail -s \"Gulden Alert\"" \
 			"admin@foo.com"
 		eerror ""
 		return 1

@@ -1,4 +1,4 @@
-# Munt-lite Electron Wallet
+# Gulden-lite Electron Wallet
 
 ## Project setup
 ```

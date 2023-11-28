@@ -8,7 +8,7 @@
       This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
       FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.<br /><br />
       Portions of this software not written by us, and libraries that we make use of are licensed under a variety of other licenses for more licensing
-      information and a copy of the source code visit <a href="https://github.com/muntorg/munt-official/blob/master/COPYING">our code repository</a
+      information and a copy of the source code visit <a href="https://github.com/gulden/gulden/blob/master/COPYING">our code repository</a
       ><br /><br />
       The below is a list of most major libraries used and their licensing, the list may not be comprehensive for a comprehensive list consult the
       repository.<br />

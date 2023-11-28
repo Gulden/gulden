@@ -1,15 +1,15 @@
 var os = require("os");
 
 let repo =
-  "https://github.com/muntorg/munt-official/releases/download/development/";
+  "https://github.com/gulden/gulden/releases/download/development/";
 
 let file = "";
 if (os.platform() === "win32") {
-  file = "libmunt_win_" + os.arch() + ".node";
+  file = "libgulden_win_" + os.arch() + ".node";
 } else if (os.platform() === "linux") {
-  file = "libmunt_linux_" + os.arch() + ".node";
+  file = "libgulden_linux_" + os.arch() + ".node";
 } else if (os.platform() === "darwin") {
-    file = "libmunt_macos_" + os.arch() + ".node";
+    file = "libgulden_macos_" + os.arch() + ".node";
 } else {
   throw "Unable to determine platform";
 }

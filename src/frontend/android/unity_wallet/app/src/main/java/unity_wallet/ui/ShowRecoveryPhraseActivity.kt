@@ -29,7 +29,7 @@ class ShowRecoveryPhraseActivity : AppBaseActivity(), UnityCore.Observer
 {
     private val erasedWallet = UnityCore.instance.isCoreReady()
 
-    //fixme: (MUNT) Change to char[] to we can securely wipe.
+    //fixme: (GULDEN) Change to char[] to we can securely wipe.
     private var recoveryPhrase: String? = null
     internal var recoveryPhraseTrimmed: String? = null
 
@@ -76,7 +76,7 @@ class ShowRecoveryPhraseActivity : AppBaseActivity(), UnityCore.Observer
     override fun onDestroy()
     {
         UnityCore.instance.removeObserver(this)
-        //fixme: (MUNT) Securely wipe.
+        //fixme: (GULDEN) Securely wipe.
         recoveryPhrase = ""
         recoveryPhraseTrimmed = ""
         super.onDestroy()

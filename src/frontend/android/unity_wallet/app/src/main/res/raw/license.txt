@@ -1,8 +1,8 @@
-Munt© is written and maintained by "The Centure Developers" under the employ of "Centure.com BV" and all code and products produced are licensed under the GNU Lesser General Public License v3.
+Gulden© is written and maintained by "The Centure Developers" under the employ of "Centure.com BV" and all code and products produced are licensed under the GNU Lesser General Public License v3.
 
-In addition to our own source code Munt makes use of source code, fonts and assets from a multitude of third party projects, and is compliant with the licensing for all of these projects, most of which are free and open source.
+In addition to our own source code Gulden makes use of source code, fonts and assets from a multitude of third party projects, and is compliant with the licensing for all of these projects, most of which are free and open source.
 
-The license information for these projects can be found alongside the source code at "https://github.com/muntorg/munt-official" as well as in text/json format distributed as part of the application bundle in the assets sub folder.
+The license information for these projects can be found alongside the source code at "https://github.com/gulden/gulden" as well as in text/json format distributed as part of the application bundle in the assets sub folder.
 
 
 GNU LESSER GENERAL PUBLIC LICENSE

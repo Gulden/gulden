@@ -1,4 +1,4 @@
-Sample init scripts and service configuration for Munt-daemon
+Sample init scripts and service configuration for Gulden-daemon
 ==========================================================
 
 Sample scripts and configuration files for systemd, Upstart and OpenRC
@@ -13,24 +13,24 @@ can be found in the contrib/init folder.
 1. Service User
 ---------------------------------
 
-All three Linux startup configurations assume the existence of a "munt" user
+All three Linux startup configurations assume the existence of a "gulden" user
 and group.  They must be created before attempting to use these scripts.
-The OS X configuration assumes Munt-daemon will be set up for the current user.
+The OS X configuration assumes Gulden-daemon will be set up for the current user.
 
 2. Configuration
 ---------------------------------
 
-At a bare minimum, Munt-daemon requires that the rpcpassword setting be set
+At a bare minimum, Gulden-daemon requires that the rpcpassword setting be set
 when running as a daemon.  If the configuration file does not exist or this
-setting is not set, Munt-deamon will shutdown promptly after startup.
+setting is not set, Gulden-daemon will shutdown promptly after startup.
 
 This password does not have to be remembered or typed as it is mostly used
-as a fixed token that Munt-deamon and client programs read from the configuration
+as a fixed token that Gulden-daemon and client programs read from the configuration
 file, however it is recommended that a strong and secure password be used
 as this password is security critical to securing the wallet should the
 wallet be enabled.
 
-If Munt-daemon is run with the "-server" flag (set by default), and no rpcpassword is set,
+If Gulden-daemon is run with the "-server" flag (set by default), and no rpcpassword is set,
 it will use a special cookie file for authentication. The cookie is generated with random
 content when the daemon starts, and deleted when it exits. Read access to this file
 controls who can access it through RPC.
@@ -38,13 +38,13 @@ controls who can access it through RPC.
 By default the cookie is stored in the data directory, but it's location can be overridden
 with the option '-rpccookiefile'.
 
-This allows for running Munt-daemon without having to do any manual configuration.
+This allows for running Gulden-daemon without having to do any manual configuration.
 
 `conf`, `pid`, and `wallet` accept relative paths which are interpreted as
 relative to the data directory. `wallet` *only* supports relative paths.
 
 For an example configuration file that describes the configuration settings,
-see `contrib/debian/examples/munt.conf`.
+see `contrib/debian/examples/gulden.conf`.
 
 3. Paths
 ---------------------------------
@@ -53,16 +53,16 @@ see `contrib/debian/examples/munt.conf`.
 
 All three configurations assume several paths that might need to be adjusted.
 
-Binary:              `/usr/bin/Munt-daemon`  
-Configuration file:  `/etc/munt/munt.conf`  
-Data directory:      `/var/lib/munt_daemon`  
-PID file:            `/var/run/munt_daemon/munt_daemon.pid` (OpenRC and Upstart) or `/var/lib/munt_daemon/munt_daemon.pid` (systemd)  
-Lock file:           `/var/lock/subsys/munt_daemon` (CentOS)  
+Binary:              `/usr/bin/Gulden-daemon`  
+Configuration file:  `/etc/gulden/gulden.conf`  
+Data directory:      `/var/lib/gulden_daemon`  
+PID file:            `/var/run/gulden_daemon/gulden_daemon.pid` (OpenRC and Upstart) or `/var/lib/gulden_daemon/gulden_daemon.pid` (systemd)  
+Lock file:           `/var/lock/subsys/gulden_daemon` (CentOS)  
 
 The configuration file, PID directory (if applicable) and data directory
-should all be owned by the munt user and group.  It is advised for security
+should all be owned by the gulden user and group.  It is advised for security
 reasons to make the configuration file and data directory only readable by the
-munt user and group.  Access to Munt-cli and other Munt-daemon rpc clients
+gulden user and group.  Access to Gulden-cli and other Gulden-daemon rpc clients
 can then be controlled by group membership.
 
 4. Installing Service Configuration
@@ -74,19 +74,19 @@ Installing this .service file consists of just copying it to
 /usr/lib/systemd/system directory, followed by the command
 `systemctl daemon-reload` in order to update running systemd configuration.
 
-To test, run `systemctl start Munt-daemon` and to enable for system startup run
-`systemctl enable Munt-daemon`
+To test, run `systemctl start Gulden-daemon` and to enable for system startup run
+`systemctl enable Gulden-daemon`
 
 4b) OpenRC
 
-Rename daemon.openrc to Munt-daemon and drop it in /etc/init.d.  Double
+Rename daemon.openrc to Gulden-daemon and drop it in /etc/init.d.  Double
 check ownership and permissions and make it executable.  Test it with
-`/etc/init.d/Munt-daemon start` and configure it to run on startup with
-`rc-update add Munt-daemon`
+`/etc/init.d/Gulden-daemon start` and configure it to run on startup with
+`rc-update add Gulden-daemon`
 
 4c) Upstart (for Debian/Ubuntu based distributions)
 
-Drop daemon.conf in /etc/init.  Test by running `service Munt-daemon start`
+Drop daemon.conf in /etc/init.  Test by running `service Gulden-daemon start`
 it will automatically start on reboot.
 
 NOTE: This script is incompatible with CentOS 5 and Amazon Linux 2014 as they
@@ -94,11 +94,11 @@ use old versions of Upstart and do not supply the start-stop-daemon utility.
 
 4d) CentOS
 
-Copy daemon.init to /etc/init.d/Munt-daemon. Test by running `service Munt-daemon start`.
+Copy daemon.init to /etc/init.d/Gulden-daemon. Test by running `service Gulden-daemon start`.
 
-Using this script, you can adjust the path and flags to the Munt-daemon program by
+Using this script, you can adjust the path and flags to the Gulden-daemon program by
 setting the DAEMON_BIN and DAEMON_OPTS environment variables in the file
-/etc/sysconfig/munt_daemon. You can also use the DAEMON_OPTS environment variable here.
+/etc/sysconfig/gulden_daemon. You can also use the DAEMON_OPTS environment variable here.
 
 5. Auto-respawn
 -----------------------------------

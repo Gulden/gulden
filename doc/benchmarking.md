@@ -1,11 +1,11 @@
 Benchmarking
 ============
 
-Munt Core has an internal benchmarking framework, with benchmarks
+Gulden Core has an internal benchmarking framework, with benchmarks
 for cryptographic algorithms such as SHA1, SHA256, SHA512 and RIPEMD160. As well as the rolling bloom filter.
 
-After compiling munt-core, the benchmarks can be run with:
-`src/bench/bench_munt`
+After compiling Gulden, the benchmarks can be run with:
+`src/bench/bench_gulden`
 
 The output will look similar to:
 ```

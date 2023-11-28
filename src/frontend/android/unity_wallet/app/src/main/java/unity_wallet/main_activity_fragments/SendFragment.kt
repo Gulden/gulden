@@ -147,7 +147,7 @@ class SendFragment : AppBaseFragment(), UnityCore.Observer {
         sellButton.setOnClickListener {
             // Send a post request to blockhut with our wallet/address info; and then launch the site if we get a positive response.
             val MyRequestQueue = Volley.newRequestQueue(context)
-            val failURL = "https://munt.org/sell"
+            val failURL = "https://gulden.com/sell"
             val request = object : StringRequest(Request.Method.POST,"https://blockhut.com/buysession.php",
                 Response.Listener { response ->
                     try
@@ -227,7 +227,7 @@ class SendFragment : AppBaseFragment(), UnityCore.Observer {
                     val params = HashMap<String,String>()
                     params["address"] = ILibraryController.GetReceiveAddress().toString()
                     params["uuid"] = IWalletController.GetUUID()
-                    params["currency"] = "munt"
+                    params["currency"] = "gulden"
                     params["wallettype"] = "android"
                     return params
                 }
@@ -339,7 +339,7 @@ class SendFragment : AppBaseFragment(), UnityCore.Observer {
 
     private fun checkClipboardEnable()
     {
-        // Enable clipboard button if it contains a valid IBAN, Munt address or Uri
+        // Enable clipboard button if it contains a valid IBAN, Gulden address or Uri
         val text = clipboardText()
         try {
             setClipButtonText(createRecipient(text).address)

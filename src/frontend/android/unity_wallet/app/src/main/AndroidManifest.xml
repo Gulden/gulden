@@ -39,8 +39,8 @@
             <!-- URI handlers for send fragment-->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
-                <data android:scheme="munt"/>
-                <data android:scheme="Munt" tools:ignore="AppLinkUrlError" />
+                <data android:scheme="gulden"/>
+                <data android:scheme="Gulden" tools:ignore="AppLinkUrlError" />
                 <data android:scheme="iban"/>
                 <data android:scheme="Iban" tools:ignore="AppLinkUrlError" />
                 <data android:scheme="IBAN" tools:ignore="AppLinkUrlError" />

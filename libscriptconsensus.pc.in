@@ -4,7 +4,7 @@ libdir=@libdir@
 includedir=@includedir@
 
 Name: @PACKAGE_NAME@ consensus library
-Description: Library for the Munt consensus protocol.
+Description: Library for the Gulden consensus protocol.
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lscriptconsensus
 Cflags: -I${includedir}

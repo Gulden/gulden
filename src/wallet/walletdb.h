@@ -260,7 +260,7 @@ public:
     static bool VerifyDatabaseFile(const std::string& walletFile, const fs::path& dataDir, std::string& warningStr, std::string& errorStr);
 
     //! write the hdchain model (external chain child index counter)
-    /* MUNT - We don't use HD chain.
+    /* GULDEN - We don't use HD chain.
     bool WriteHDChain(const CHDChain& chain);
     */
 

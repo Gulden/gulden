@@ -1,9 +1,9 @@
 Note
 -----
 
-Please note that in order to achieve quality and consistency Munt is written to modern software standards, this means that we use the latest languages (C++17) and recent libraries (boost) which may not be present on older distributions.
+Please note that in order to achieve quality and consistency Gulden is written to modern software standards, this means that we use the latest languages (C++17) and recent libraries (boost) which may not be present on older distributions.
 
-In order to build Munt you will therefore require a recent compiler (GCC 7.2 or newer) and recent libraries which means you should either use a recent distro or manually install these.
+In order to build Gulden you will therefore require a recent compiler (GCC 7.2 or newer) and recent libraries which means you should either use a recent distro or manually install these.
 
 These instructions do not deal with this, however we will provide distro specific instructions in future to assist with this.
 
@@ -12,8 +12,8 @@ Please read all the below instructions before attempting to build the software o
 Binaries
 -----
 There are binaries for every release, please reconsider your need to build and unless you have a very good reason to do so rather just download these.
-Latest binaries can always be found here: https://github.com/muntorg/munt-official/releases
-Download the latest linux*.tar.gz extract it and simply copy Munt-daemon out of it instead of going through the unnecessary hassle of building.
+Latest binaries can always be found here: https://github.com/gulden/gulden/releases
+Download the latest linux*.tar.gz extract it and simply copy Gulden-daemon out of it instead of going through the unnecessary hassle of building.
 
 Generic docker instructions
 -----
@@ -22,7 +22,7 @@ When to use docker for your builds:
 * You are on an older distribution
 * You want to build with minimal manual fuss and with minimal distruption/changes to your operating system
 
-The easiest way to build Munt on any distribution with minimal work is to simply use the docker build script.
+The easiest way to build Gulden on any distribution with minimal work is to simply use the docker build script.
 Instructions:
 * Follow distro specific steps to install docker (e.g. `apt-get install docker.io && systemctl start docker`)
 * Run the docker build script from the root of this repo `./developer-tools/build_docker.sh`
@@ -46,9 +46,9 @@ Generic instructions
 -----
 
 
-Munt is autotools based, and has a dependency management system capable of building all libraries it requires.
+Gulden is autotools based, and has a dependency management system capable of building all libraries it requires.
 
-To build Munt-daemon from this repository please follow these steps which are valid for Ubuntu and Debian but can easily be modified for any distribution:
+To build Gulden-daemon from this repository please follow these steps which are valid for Ubuntu and Debian but can easily be modified for any distribution:
 * sudo apt-get install curl build-essential libtool autotools-dev autoconf pkg-config libssl-dev
 * ./autogen.sh
 * cd depends
@@ -58,7 +58,7 @@ To build Munt-daemon from this repository please follow these steps which are va
 * ../configure --prefix=$PWD/../depends/x86_64-pc-linux-gnu/
 * make -j$(nproc)
 
-To build the full UI version of Munt:
+To build the full UI version of Gulden:
 * sudo apt-get install curl build-essential libtool autotools-dev autoconf pkg-config libssl-dev libpcre++-dev
 * ./autogen.sh  
 * cd depends  
@@ -103,7 +103,7 @@ Instructions:
 For more detailed instructions see contrib/guix/README.md
 
 
-MuntCore framework for iOS
+GuldenCore framework for iOS
 -----
 
 Prerequisites:
@@ -123,7 +123,7 @@ Build the framework library:
 > ./developer-tools/mobile/ios/build_ios_core.sh
 
 
-MuntCore framework for android
+GuldenCore framework for android
 -----
 
 Fetch build prerequisites:
@@ -146,7 +146,7 @@ Binaries are output as follows by the build process:
 
 |Binary|Location|
 |:-----------|:---------|
-|Qt wallet|build/src/qt/Munt|
-|Munt Daemon/RPC server|build/src/Munt-daemon|
-|Munt RPC client|build/src/Munt-cli|
-|Munt tx utility|build/src/Munt-tx|
+|Qt wallet|build/src/qt/Gulden|
+|Gulden Daemon/RPC server|build/src/Gulden-daemon|
+|Gulden RPC client|build/src/Gulden-cli|
+|Gulden tx utility|build/src/Gulden-tx|
