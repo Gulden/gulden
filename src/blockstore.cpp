@@ -106,7 +106,7 @@ bool CBlockStore::WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, cons
     return true;
 }
 
-bool CBlockStore::ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const CChainParams& params, const CBlockIndex* index, int extraSerialisationArgs)
+bool CBlockStore::ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const CChainParams& params, const CBlockIndex* index)
 {
     DO_BENCHMARK("CBlockStore: ReadBlockFromDisk", BCLog::BENCH|BCLog::IO);
 
@@ -115,7 +115,7 @@ bool CBlockStore::ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, con
     block.SetNull();
 
     // Open history file to read
-    CFile filein(GetBlockFile(pos, true), SER_DISK, CLIENT_VERSION|extraSerialisationArgs);
+    CFile filein(GetBlockFile(pos, true), SER_DISK, CLIENT_VERSION);
     if (filein.IsNull())
         return error("ReadBlockFromDisk: OpenBlockFile failed for %s", pos.ToString());
 

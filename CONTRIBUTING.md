@@ -26,5 +26,4 @@ Read here about our [testnet](./technical_documentation/accelerated_testnet.md) 
 Localisation/Translation
 -----------------------
 
-Improvements/additions to the localisations are always welcome, however please don't modify the .ts files directly - the correct place to participate in translation is our translation portal translate.gulden.com
-Discussion around translation can be had in the #translate channel on our slack.
+Improvements/additions to the localisations are always welcome.

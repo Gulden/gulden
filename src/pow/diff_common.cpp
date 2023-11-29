@@ -7,13 +7,14 @@
 #include "diff_old.h"
 #include "../../chainparams.h"
 
+extern const int32_t nMaxHeight;
 unsigned int GetNextWorkRequired(const CBlockIndex* indexLast, const CBlockHeader* block, unsigned int nPowTargetSpacing, unsigned int nPowLimit)
 {
     if (Params().GetConsensus().fPowNoRetargeting)
         return indexLast->nBits;
 
-    static int nDeltaSwitchoverBlock = DIFF_SWITCHOVER(10, 250000);
-    static int nOldDiffSwitchoverBlock = DIFF_SWITCHOVER(0, 1831778);
+    static int nDeltaSwitchoverBlock = 0;
+    static int nOldDiffSwitchoverBlock = 0;
 
     if ((indexLast->nHeight+1) >= nOldDiffSwitchoverBlock)
     {

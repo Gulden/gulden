@@ -101,16 +101,14 @@ For those who really need too or are technically inclined it is of course possib
 |Difficulty adjustment period:|Every block|Every block|
 |Difficulty adjustment algorithm:|Delta|Delta|
 |Total coins to be minted over time:|750M|-|
-|P2P Port|9231|9923|
-|RPC Port|9232|9924|
-|P2P Network Header|fcfef7e0|Look in debug.log|
+|P2P Port|9241|9243|
+|RPC Port|9242|9244|
+|P2P Network Header|f7fefce0|Look in debug.log|
 |Address version byte|38 (G)|65 (T)|
 |P2SH version byte|98 (g)|127 (t)|
 |BIP44 coin type|87 0x80000057|87 0x80000057|
 |**Infrastructure**|**Main network**|**[Testnet](./technical_documentation/accelerated_testnet.md#official-testnet)**|
-|Official block explorer|https://explorer.gulden.com/|-|
-|Community block explorer|https://muntbook.org/|-|
-|Community block explorer|https://munt.chainviewer.org/|-|
-|DNS Seed 1|seed.gulden.com|-|
-|DNS Seed 2|amsterdam.gulden.com|-|
-|DNS Seed 3|rotterdam.gulden.network|-|
+|Official block explorer|https://blockchain.gulden.com/|-|
+|Community block explorer||-|
+|DNS Seed 1|seed1.gulden.com|-|
+|DNS Seed 2|seed2.gulden.com|-|

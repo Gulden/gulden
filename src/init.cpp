@@ -188,6 +188,12 @@ void CoreInterrupt(boost::thread_group& threadGroup)
     LogPrintf("Core interrupt: done.\n");
 }
 
+//NB! This is only for RPC code and similar (display purposes) and only works when txindex is enabled. DO NOT call this in any validation or similar code
+uint256 getHashFromTxIndexRef(uint64_t blockHeight, uint64_t txIndex)
+{
+    return pblocktree->ReadTxIndexRef(blockHeight, txIndex);
+}
+
 extern void ServerShutdown(node::NodeContext& nodeContext);
 void CoreShutdown(boost::thread_group& threadGroup, node::NodeContext& nodeContext)
 {
@@ -246,7 +252,7 @@ void CoreShutdown(boost::thread_group& threadGroup, node::NodeContext& nodeConte
 
         if (!isFullSyncMode() && IsPartialSyncActive())
             PersistAndPruneForPartialSync();
-        else
+        else if(pcoinsTip)
             FlushStateToDisk();
 
         blockStore.CloseBlockFiles();
@@ -409,8 +415,7 @@ std::string LicenseInfo()
            + strprintf(helptr("This product is originally based on a fork of the Bitcoin project. Copyright (C) 2014-2018 The Bitcoin Core Developers.")) + "\n"
            + strprintf(helptr("This product includes software developed by the OpenSSL Project for use in the OpenSSL Toolkit %s and cryptographic software written by Eric Young and UPnP software written by Thomas Bernard."), "<https://www.openssl.org>")+ "\n"
            + strprintf(helptr("This product uses a licensed copy of Font Awesome Pro"))+ "\n"
-           + strprintf(helptr("This product includes and uses the Lato font which is licensed under the SIL Open Font License"))+ "\n"
-           + strprintf(helptr("This product makes use of the Qt toolkit which is dynamically linked and licensed under the LGPL"))+ "\n";
+           + strprintf(helptr("This product includes and uses the Lato font which is licensed under the SIL Open Font License"))+ "\n";
 }
 
 static void BlockNotifyCallback(bool initialSync, const CBlockIndex *pBlockIndex)
@@ -1009,6 +1014,7 @@ bool AppInitParameterInteraction()
         CPubKey vchPubKey = key.GetPubKey();
         vchPubKey.Decompress();
         printf("PublicKey %s\n", HexStr(vchPubKey.begin(), vchPubKey.end()).c_str());
+
         exit(EXIT_SUCCESS);
     }
 
@@ -1497,7 +1503,7 @@ bool AppInitMain(boost::thread_group& threadGroup, node::NodeContext& node)
                 
 
                 //GULDEN - version 2.0 upgrade
-                if (upgradeOnceOnly && pcoinsdbview->nPreviousVersion < pcoinsdbview->nCurrentVersion)
+                if (upgradeOnceOnly && pcoinsdbview->nPreviousVersion < 1)
                 {
                     if (fullResyncForUpgrade)
                     {
@@ -1517,8 +1523,8 @@ bool AppInitMain(boost::thread_group& threadGroup, node::NodeContext& node)
                     break;
                 }
 
-                // Upgrade
-                if (upgradeOnceOnly && pcoinsdbview->nPreviousVersion < pcoinsdbview->nCurrentVersion)
+                //GULDEN - version 2.0 upgrade
+                if (upgradeOnceOnly && pcoinsdbview->nPreviousVersion < 1)
                 {
                     upgradeOnceOnly = false;
                     if (!fullResyncForUpgrade)
@@ -1526,7 +1532,7 @@ bool AppInitMain(boost::thread_group& threadGroup, node::NodeContext& node)
                         uiInterface.InitMessage(_("Upgrading block index..."));
                         if (!UpgradeBlockIndex(chainparams, pcoinsdbview->nPreviousVersion, pcoinsdbview->nCurrentVersion))
                         {
-                            LogPrintf("Error upgrading block database, attempting to wipe index and resync instead.");
+                            LogPrintf("Error upgrading block database to 2.0 (segsig) format, attempting to wipe index and resync instead.");
                             fullResyncForUpgrade = true;
                         }
                         else

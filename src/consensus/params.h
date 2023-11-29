@@ -16,6 +16,7 @@
 #include "uint256.h"
 #include <map>
 #include <string>
+#include <limits>
 
 namespace Consensus {
 
@@ -54,6 +55,15 @@ struct BIP9Deployment {
     DeploymentType type;
     int requiredProtoUpgradePercent;
     int protoVersion;
+    
+    /** Constant for nTimeout very far in the future. */
+    static constexpr int64_t NO_TIMEOUT = std::numeric_limits<int64_t>::max();
+
+    /** Special value for nStartTime indicating that the deployment is always active.
+     *  This is useful for testing, as it means tests don't need to deal with the activation
+     *  process (which takes at least 3 BIP9 intervals). Only tests that specifically test the
+     *  behaviour during activation cannot use this. */
+    static constexpr int64_t ALWAYS_ACTIVE = -1;
 };
 
 /**
@@ -63,7 +73,6 @@ struct Params {
     uint256 hashGenesisBlock;
     /** Block height and hash at which BIP34 becomes active */
     int BIP34Height;
-    uint256 BIP34Hash;
     /** Block height at which BIP65 becomes active */
     int BIP65Height;
     /** Block height at which BIP66 becomes active */
@@ -77,16 +86,10 @@ struct Params {
     uint32_t nMinerConfirmationWindow;
     BIP9Deployment vDeployments[MAX_VERSION_BITS_DEPLOYMENTS];
     uint64_t fixedRewardIntroductionHeight;
-    uint64_t fixedRewardReductionHeight;
     uint64_t pow2Phase2FirstBlockHeight;
     uint64_t pow2Phase3FirstBlockHeight;
-    uint64_t devBlockSubsidyActivationHeight;
     uint64_t pow2Phase4FirstBlockHeight;
     uint64_t pow2Phase5FirstBlockHeight;
-    uint64_t pow2WitnessSyncHeight;
-    uint64_t halvingIntroductionHeight;
-    uint64_t finalSubsidyBlockHeight;
-    
     /** Proof of work parameters */
     uint256 powLimit;
     bool fPowAllowMinDifficultyBlocks;

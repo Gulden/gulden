@@ -250,8 +250,10 @@ public:
     virtual size_t EstimateSize() const { return 0; }
 
     virtual void GetAllCoins(std::map<COutPoint, Coin>&) const {};
+    #ifdef WITNESS_HEADER_SYNC
     virtual void GetAllCoinsIndexBased(std::map<COutPoint, Coin>&) const {};
     virtual void GetAllCoinsIndexBasedDirect(std::map<COutPoint, Coin>& allCoins) const {};
+    #endif
 };
 
 
@@ -274,6 +276,7 @@ public:
     {
         base->GetAllCoins(allCoins);
     }
+    #ifdef WITNESS_HEADER_SYNC
     void GetAllCoinsIndexBased(std::map<COutPoint, Coin>& allCoins) const override
     {
         base->GetAllCoinsIndexBased(allCoins);
@@ -282,6 +285,7 @@ public:
     {
         base->GetAllCoinsIndexBasedDirect(allCoins);
     }
+    #endif
 };
 
 
@@ -398,6 +402,7 @@ public:
         }
     }
     
+    #ifdef WITNESS_HEADER_SYNC
     void GetAllCoinsIndexBased(std::map<COutPoint, Coin>& allCoinsIndexBased) const override
     {
         std::map<COutPoint, Coin> allCoins;
@@ -423,6 +428,7 @@ public:
             }
         }
     }
+    #endif
 
 private:
     CCoinsMap::iterator FetchCoin(const COutPoint &outpoint, CCoinsRefMap::iterator* pRefIterReturn=nullptr) const;

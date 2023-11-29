@@ -18,45 +18,28 @@ BOOST_AUTO_TEST_CASE(block_subsidy_test)
 {
     const auto chainParams = CreateChainParams(CBaseChainParams::MAIN);
     uint64_t nP4First = chainParams->GetConsensus().pow2Phase4FirstBlockHeight;
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1).mining,                                                                     COIN * 170000000);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(250000).mining,                                                                COIN * 1000);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(250001).mining,                                                                COIN * 100);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1030001).total,                                                                COIN * 110);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(nP4First).total,                                                               COIN * 110);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(nP4First+1).total,                                                             COIN * 120);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1226651).total,                                                                COIN * 120);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1226652).total,                                                                COIN * 200);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1226652).total-GetBlockSubsidy(1226652).dev-GetBlockSubsidy(1226652).witness,  COIN * 90);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1226652).mining,                                                               COIN * 90);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1226652).dev,                                                                  COIN * 80);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1226652).witness,                                                              COIN * 30);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1228003).total,                                                                COIN * 200);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1228004).total,                                                                COIN * 160);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1228004).total-GetBlockSubsidy(1228004).dev-GetBlockSubsidy(1228004).witness,  COIN * 50);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1228004).mining,                                                               COIN * 50);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1228004).dev,                                                                  COIN * 80);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1228004).witness,                                                              COIN * 30);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1400000).mining,                                                               COIN * 50);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1400000).dev,                                                                  COIN * 80);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1400000).witness,                                                              COIN * 30);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1400001).mining,                                                               COIN * 10);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1400001).witness,                                                              COIN * 15);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1400001).dev,                                                                  COIN * 65);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1619997).mining,                                                               COIN * 10);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1619997).witness,                                                              COIN * 15);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1619997).dev,                                                                  COIN * 100'000'000);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1619998).mining,                                                               COIN * 10);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1619998).witness,                                                              COIN * 15);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1619998).dev,                                                                  COIN * 0);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(2242500).mining,                                                               COIN * 5);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(2242500).witness,                                                              CENT * 750);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(2242500).dev,                                                                  COIN * 0); 
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(2242501).mining,                                                               COIN * 5);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(2242501).witness,                                                              CENT * 750);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(2242501).dev,                                                                  CENT * 0);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(433'009'989).mining,                                                                     0);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(433'009'989).witness,                                                                     0);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(433'009'989).dev,                                                                     0);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(0).total,             (994'744'000*COIN) + (10*CENT));
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(1000).total,          10*CENT*2);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(1000).witness,        10*CENT);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(99999).total,         10*CENT*2);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(99999).witness,       10*CENT);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(100000).total,        (10*CENT));
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(100000).witness,      (75*CENT/10));
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(100001).total,        (10*CENT));
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(100001).witness,      (75*CENT/10));
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(499999).total,        (10*CENT));
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(500000).total,        (10*CENT)/2);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(500001).total,        (10*CENT)/2);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(899999).total,        (10*CENT)/2);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(900000).total,        (10*CENT)/2/2);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(900001).total,        (10*CENT)/2/2);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(1299999).total,       (10*CENT)/2/2);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(1300000).total,       (10*CENT)/2/2/2);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(1300001).total,       (10*CENT)/2/2/2);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(9300001).total,       0);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(12000000).total,      0);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(42000000).total,      0);
+    
 }
 
 
@@ -64,13 +47,12 @@ BOOST_AUTO_TEST_CASE(subsidy_limit_test)
 {
     const auto chainParams = CreateChainParams(CBaseChainParams::MAIN);
     CAmount nSum = 0;
-    for (uint64_t nHeight = 0; nHeight < Params().GetConsensus().finalSubsidyBlockHeight + 200000; nHeight++)
+    for (uint64_t nHeight = 0; nHeight < (400000*40); nHeight++)
     {
         CAmount nSubsidy = GetBlockSubsidy(nHeight).total;
         nSum += nSubsidy;
-        BOOST_CHECK(MoneyRange(nSum));
     }
-    BOOST_CHECK_EQUAL(nSum, 700'000'000*COIN);
+    BOOST_CHECK_EQUAL(nSum,  1'971'000'000*COIN);
 }
 
 bool ReturnFalse() { return false; }

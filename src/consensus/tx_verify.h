@@ -52,7 +52,7 @@ struct CWitnessTxBundle
         RearrangeType,
         ChangeWitnessKeyType
     };
-    CWitnessTxBundle(WitnessTxType bundleType_, std::tuple<const CTxOut, CTxOutPoW2Witness, COutPoint> output)
+    CWitnessTxBundle(WitnessTxType bundleType_, std::pair<const CTxOut, CTxOutPoW2Witness> output)
     : bundleType(bundleType_)
     {
         outputs.push_back(output);
@@ -61,7 +61,6 @@ struct CWitnessTxBundle
     CWitnessTxBundle() {}
 
     inline bool IsValidRearrangeBundle();
-    inline bool IsValidMultiRenewalBundle(uint64_t nHeight);
     inline bool IsValidSpendBundle(uint64_t nHeight, const CTransaction& transaction);
     inline bool IsValidChangeWitnessKeyBundle();
     inline bool IsValidIncreaseBundle();
@@ -70,11 +69,8 @@ struct CWitnessTxBundle
 
     WitnessTxType bundleType=CreationType;
     uint64_t inputsActualLockFromBlock = 0;
-
-    //NB! The COutPoint's below are not guaranteed to always be available; if we have been serialised/unserialised from disk they will be set as (0, 0, 0)
-    //Any code that relies on the OutPoints should ensure it is working on unserialised copies (or update the serialisation code if appropriate)
-    std::vector<std::tuple<const CTxOut, CTxOutPoW2Witness, COutPoint>> inputs;
-    std::vector<std::tuple<const CTxOut, CTxOutPoW2Witness, COutPoint>> outputs;
+    std::vector<std::pair<const CTxOut, CTxOutPoW2Witness>> inputs;
+    std::vector<std::pair<const CTxOut, CTxOutPoW2Witness>> outputs;
 
     ADD_SERIALIZE_METHODS;
 
@@ -83,45 +79,17 @@ struct CWitnessTxBundle
     {
         READWRITE(bundleType);
         READWRITE(inputsActualLockFromBlock);
-        if (ser_action.ForRead())
-        {
-            uint64_t inputSize = ReadCompactSize(s);
-            for (uint64_t i=0; i<inputSize; ++i)
-            {
-                std::pair<const CTxOut, CTxOutPoW2Witness> item;
-                CTxOut& txOut = REF(item.first);
-                txOut.ReadFromStream(s, CTxOut::NEW_FORMAT_VERSION);
-                STRREAD(item.second);
-                inputs.push_back(std::tuple(item.first, item.second, COutPoint()));
-            }
-            uint64_t outputSize = ReadCompactSize(s);
-            for (uint64_t i=0; i<outputSize; ++i)
-            {
-                std::pair<const CTxOut, CTxOutPoW2Witness> item;
-                CTxOut& txOut = REF(item.first);
-                txOut.ReadFromStream(s, CTxOut::NEW_FORMAT_VERSION);
-                STRREAD(item.second);
-                outputs.push_back(std::tuple(item.first, item.second, COutPoint()));
-            }
-        }
-        else
-        {
-            WriteCompactSize(s, inputs.size());
-            for (const auto& [txOut, txOutWitness, outPoint] : inputs)
-            {
-                (void) outPoint;
-                STRWRITE(std::pair(txOut, txOutWitness));
-            }
-            WriteCompactSize(s, outputs.size());
-            for (const auto& [txOut, txOutWitness, outPoint] : outputs)
-            {
-                (void) outPoint;
-                STRWRITE(std::pair(txOut, txOutWitness));
-            }
-        }
+        READWRITECOMPACTSIZEVECTOR(inputs);
+        READWRITECOMPACTSIZEVECTOR(outputs);
     }
 };
 
+template<typename Stream> inline void Unserialize(Stream& s, std::pair<const CTxOut, CTxOutPoW2Witness>& a )
+{
+    CTxOut& txOut = REF(a.first);
+    txOut.ReadFromStream(s, CTxOut::NEW_FORMAT_VERSION);
+    Unserialize(s, a.second);
+}
 
 struct CWitnessBundles: std::vector<CWitnessTxBundle>
 {
@@ -145,7 +113,7 @@ struct CWitnessBundles: std::vector<CWitnessTxBundle>
 
 };
 
-bool CheckTxInputAgainstWitnessBundles(CValidationState& state, std::vector<CWitnessTxBundle>* pWitnessBundles, const CTxOut& prevOut, const CTxIn input, uint64_t nInputHeight, uint64_t nSpendHeight, bool isOldTransactionVersion);
+bool CheckTxInputAgainstWitnessBundles(CValidationState& state, std::vector<CWitnessTxBundle>* pWitnessBundles, const CTxOut& prevOut, const CTxIn input, uint64_t nInputHeight, bool isOldTransactionVersion);
 
 CAmount CalculateWitnessPenaltyFee(const CTxOut& output);
 void IncrementWitnessFailCount(uint64_t& failCount);
@@ -159,7 +127,7 @@ bool CheckTransaction(const CTransaction& tx, CValidationState& state, bool fChe
 bool CheckTransactionContextual(const CTransaction& tx, CValidationState& state, int checkHeight);
 
 /** Build witness bundles and witness related validity checks */
-bool BuildWitnessBundles(const CTransaction& tx, CValidationState& state, uint64_t nSpendHeight, uint64_t transactionIndex, std::function<bool(const COutPoint&, CTxOut&, uint64_t&, uint64_t&, uint64_t&)> getTxOut, std::vector<CWitnessTxBundle>& bundles);
+bool BuildWitnessBundles(const CTransaction& tx, CValidationState& state, int nCheckHeight, std::function<bool(const COutPoint&, CTxOut&, int&)> getTxOut, std::vector<CWitnessTxBundle>& bundles);
 
 namespace Consensus {
 /**

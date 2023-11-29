@@ -83,15 +83,15 @@ BOOST_AUTO_TEST_CASE(netbase_splithost)
     BOOST_CHECK(TestSplitHost("www.gulden.com:80", "www.gulden.com", 80));
     BOOST_CHECK(TestSplitHost("[www.gulden.com]:80", "www.gulden.com", 80));
     BOOST_CHECK(TestSplitHost("127.0.0.1", "127.0.0.1", -1));
-    BOOST_CHECK(TestSplitHost("127.0.0.1:9231", "127.0.0.1", 9231));
+    BOOST_CHECK(TestSplitHost("127.0.0.1:9241", "127.0.0.1", 9241));
     BOOST_CHECK(TestSplitHost("[127.0.0.1]", "127.0.0.1", -1));
-    BOOST_CHECK(TestSplitHost("[127.0.0.1]:9231", "127.0.0.1", 9231));
+    BOOST_CHECK(TestSplitHost("[127.0.0.1]:9241", "127.0.0.1", 9241));
     BOOST_CHECK(TestSplitHost("::ffff:127.0.0.1", "::ffff:127.0.0.1", -1));
-    BOOST_CHECK(TestSplitHost("[::ffff:127.0.0.1]:9231", "::ffff:127.0.0.1", 9231));
-    BOOST_CHECK(TestSplitHost("[::]:9231", "::", 9231));
-    BOOST_CHECK(TestSplitHost("::9231", "::9231", -1));
-    BOOST_CHECK(TestSplitHost(":9231", "", 9231));
-    BOOST_CHECK(TestSplitHost("[]:9231", "", 9231));
+    BOOST_CHECK(TestSplitHost("[::ffff:127.0.0.1]:9241", "::ffff:127.0.0.1", 9241));
+    BOOST_CHECK(TestSplitHost("[::]:9241", "::", 9241));
+    BOOST_CHECK(TestSplitHost("::9241", "::9241", -1));
+    BOOST_CHECK(TestSplitHost(":9241", "", 9241));
+    BOOST_CHECK(TestSplitHost("[]:9241", "", 9241));
     BOOST_CHECK(TestSplitHost("", "", -1));
 }
 
@@ -104,10 +104,10 @@ bool static TestParse(std::string src, std::string canon)
 BOOST_AUTO_TEST_CASE(netbase_lookupnumeric)
 {
     BOOST_CHECK(TestParse("127.0.0.1", "127.0.0.1:65535"));
-    BOOST_CHECK(TestParse("127.0.0.1:9231", "127.0.0.1:9231"));
+    BOOST_CHECK(TestParse("127.0.0.1:9241", "127.0.0.1:9241"));
     BOOST_CHECK(TestParse("::ffff:127.0.0.1", "127.0.0.1:65535"));
     BOOST_CHECK(TestParse("::", "[::]:65535"));
-    BOOST_CHECK(TestParse("[::]:9231", "[::]:9231"));
+    BOOST_CHECK(TestParse("[::]:9241", "[::]:9241"));
     BOOST_CHECK(TestParse("[127.0.0.1]", "127.0.0.1:65535"));
     BOOST_CHECK(TestParse(":::", "[::]:0"));
 }

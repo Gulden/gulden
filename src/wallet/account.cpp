@@ -85,7 +85,7 @@ CAccount* CreateAccountHelper(CWallet* pwallet, std::string accountName, std::st
     {
         account = pwallet->GenerateNewAccount(accountName.c_str(), AccountState::Normal, AccountType::Mobi, bMakeActive);
     }
-    else if (accountType == "Witness")
+    else if (accountType == "Witness" || accountType == "Holding")
     {
         account = pwallet->GenerateNewAccount(accountName.c_str(), AccountState::Normal, AccountType::PoW2Witness, bMakeActive);
     }

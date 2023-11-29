@@ -34,7 +34,6 @@
 #include "wallet/feebumper.h"
 #include "wallet/wallet.h"
 #include "wallet/walletdb.h"
-#include "wallet/witness_operations.h"
 #include "script/ismine.h"
 
 #include <stdint.h>
@@ -452,42 +451,10 @@ static void SendMoney(CWallet * const pwallet, CAccount* fromAccount, const CTxD
             accountsToTry.push_back(accountPair.second);
         }
     }
-    if (!pwallet->CreateTransaction(accountsToTry, vecSend, wtxNew, reservekey, nFeeRequired, nChangePosRet, strError))
-    {
+    if (!pwallet->CreateTransaction(accountsToTry, vecSend, wtxNew, reservekey, nFeeRequired, nChangePosRet, strError)) {
         if (!fSubtractFeeFromAmount && nValue + nFeeRequired > curBalance)
-        {
             strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
-        }
-        else if (fromAccount->IsPoW2Witness() && fSubtractFeeFromAmount)
-        {
-            const auto& unspentWitnessOutputs = getCurrentOutputsForWitnessAccount(fromAccount);
-            if (unspentWitnessOutputs.size() > 0)
-            {
-                const auto& [currentWitnessTxOut, currentWitnessHeight, currentWitnessTxIndex, currentWitnessOutpoint] = unspentWitnessOutputs[0];
-                (unused) currentWitnessHeight;
-                (unused) currentWitnessTxIndex;
-                (unused) currentWitnessOutpoint;
-                const std::vector<CAccount*> accounts = pwallet->FindAccountsForTransaction(currentWitnessTxOut);
-                accountsToTry.clear();
-                for ( const auto& accountToTry : accounts )
-                {
-                    accountsToTry.push_back(accountToTry);
-                }
-                strError = "";
-                if (!pwallet->CreateTransaction(accountsToTry, vecSend, wtxNew, reservekey, nFeeRequired, nChangePosRet, strError))
-                {
-                    throw JSONRPCError(RPC_WALLET_ERROR, strError);
-                }
-            }
-            else
-            {
-                throw JSONRPCError(RPC_WALLET_ERROR, strError);
-            }
-        }
-        else
-        {
-            throw JSONRPCError(RPC_WALLET_ERROR, strError);
-        }
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
     CValidationState state;
     if (!pwallet->CommitTransaction(wtxNew, reservekey, g_connman.get(), state)) {
@@ -2240,7 +2207,7 @@ UniValue walletpassphrase(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if ((request.fHelp || request.params.size() != 2)) {
+    if (pwallet->IsCrypted() && (request.fHelp || request.params.size() != 2)) {
         throw std::runtime_error(
             "walletpassphrase \"passphrase\" timeout\n"
             "\nStores the wallet decryption key in memory for 'timeout' seconds.\n"
@@ -2261,13 +2228,13 @@ UniValue walletpassphrase(const JSONRPCRequest& request)
         );
     }
 
+    DS_LOCK2(cs_main, pwallet->cs_wallet);
+
     if (request.fHelp)
         return true;
     if (!pwallet->IsCrypted()) {
         throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an unencrypted wallet, but walletpassphrase was called.");
     }
-    
-    DS_LOCK2(cs_main, pwallet->cs_wallet);
 
     // Note that the walletpassphrase is stored in request.params[0] which is not mlock()ed
     SecureString strWalletPass;
@@ -2301,7 +2268,7 @@ UniValue walletpassphrasechange(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if ((request.fHelp || request.params.size() != 2)) {
+    if (pwallet->IsCrypted() && (request.fHelp || request.params.size() != 2)) {
         throw std::runtime_error(
             "walletpassphrasechange \"oldpassphrase\" \"newpassphrase\"\n"
             "\nChanges the wallet passphrase from 'oldpassphrase' to 'newpassphrase'.\n"
@@ -2352,7 +2319,7 @@ UniValue walletlock(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if ((request.fHelp || request.params.size() != 0)) {
+    if (pwallet->IsCrypted() && (request.fHelp || request.params.size() != 0)) {
         throw std::runtime_error(
             "walletlock\n"
             "\nRemoves the wallet encryption key from memory, locking the wallet.\n"
@@ -2370,13 +2337,14 @@ UniValue walletlock(const JSONRPCRequest& request)
         );
     }
 
+    DS_LOCK2(cs_main, pwallet->cs_wallet);
+
     if (request.fHelp)
         return true;
     if (!pwallet->IsCrypted()) {
         throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an unencrypted wallet, but walletlock was called.");
     }
-    
-    DS_LOCK2(cs_main, pwallet->cs_wallet);
+
     pwallet->Lock();
 
     return NullUniValue;
@@ -2390,7 +2358,7 @@ UniValue encryptwallet(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if ((request.fHelp || request.params.size() != 1)) {
+    if (!pwallet->IsCrypted() && (request.fHelp || request.params.size() != 1)) {
         throw std::runtime_error(
             "encryptwallet \"passphrase\"\n"
             "\nEncrypts the wallet with 'passphrase'. This is for first time encryption.\n"
@@ -2415,13 +2383,13 @@ UniValue encryptwallet(const JSONRPCRequest& request)
         );
     }
 
+    DS_LOCK2(cs_main, pwallet->cs_wallet);
+
     if (request.fHelp)
         return true;
     if (pwallet->IsCrypted()) {
         throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an encrypted wallet, but encryptwallet was called.");
     }
-    
-    DS_LOCK2(cs_main, pwallet->cs_wallet);
 
     // TODO: get rid of this .c_str() by implementing SecureString::operator=(std::string)
     // Alternately, find a way to make request.params[0] mlock()'d to begin with.
@@ -2441,9 +2409,8 @@ UniValue encryptwallet(const JSONRPCRequest& request)
     // BDB seems to have a bad habit of writing old data into
     // slack space in .dat files; that is bad if the old data is
     // unencrypted private keys. So:
-    LogPrintf("shutdown: triggering shutdown to encrypt wallet");
     AppLifecycleManager::gApp->shutdown();
-    return "wallet encrypted; " GLOBAL_APPNAME " server stopping, restart to run with encrypted wallet. The keypool has been flushed and a new HD seed was generated (if you are using HD). You need to make a new backup.";
+    return "wallet encrypted; " GLOBAL_APPNAME " server stopping, restart to run with encrypted wallet. You need to make a new backup.";
 }
 
 UniValue lockunspent(const JSONRPCRequest& request)
@@ -3126,7 +3093,7 @@ UniValue fundrawtransaction(const JSONRPCRequest& request)
         coinControl.fAllowWatchOnly = request.params[2].get_bool();
       }
       else {
-        RPCTypeCheck(request.params, {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ});
+        RPCTypeCheck(request.params, {UniValue::VSTR, UniValue::VOBJ});
 
         UniValue options = request.params[2];
 
@@ -3377,7 +3344,7 @@ extern UniValue importmulti(const JSONRPCRequest& request);
 static const CRPCCommand commands[] =
 { //  category              name                        actor (function)           okSafeMode
     //  --------------------- ------------------------    -----------------------    ----------
-    { "rawtransactions",    "fundrawtransaction",       &fundrawtransaction,       false,  {"hexstring", "account", "options"} },
+    { "rawtransactions",    "fundrawtransaction",       &fundrawtransaction,       false,  {"hexstring","options"} },
     { "hidden",             "resendwallettransactions", &resendwallettransactions, true,   {} },
     { "wallet",             "abandontransaction",       &abandontransaction,       false,  {"txid"} },
     { "wallet",             "abortrescan",              &abortrescan,              false,  {} },

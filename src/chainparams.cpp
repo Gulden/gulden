@@ -63,7 +63,7 @@ static CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_t nBits
     return CreateGenesisBlock(ParseHex("4f6e206a616e756172692031737420746865204475746368206c6f73742074686572652062656c6f7665642047756c64656e"), genesisOutputScript, nTime, nNonce, nBits, nVersion, genesisReward);
 }
 
-CChainParams::CChainParams(): fIsOfficialTestnetV1(false), fIsTestnet(false), fIsRegtest(false), fIsRegtestLegacy(false) {}
+CChainParams::CChainParams(): fIsOfficialTestnetV1(false), fIsTestnet(false), fIsRegtestLegacy(false), fIsRegtest(false) {}
 
 void CChainParams::UpdateVersionBitsParameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout)
 {
@@ -86,13 +86,12 @@ class CMainParams : public CChainParams {
 public:
     CMainParams() {
         strNetworkID = "main";
-        consensus.BIP34Height = 227931;
-        consensus.BIP34Hash = uint256S("0x000000000000024b89b42a942fe0d9fea3bb44ab7bd1b19115dd6a759c0808b8");
-        consensus.BIP65Height = 388381; // 000000000000000004c2b624ed5d7756c508d90fd0da2c7c679febfa6c4735f0
-        consensus.BIP66Height = 363725; // 00000000000000000379eaa19dce8c9b722d46ae6a57c2f1a988119488b50931
-        consensus.powLimit =  uint256S("0x00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        consensus.BIP34Height = 1;
+        consensus.BIP65Height = 1; 
+        consensus.BIP66Height = 1; 
+        consensus.powLimit =  uint256S("0x003fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 3.5 * 24 * 60 * 60; // 3.5 days
-        consensus.nPowTargetSpacing = 150; // 2.5 minutes
+        consensus.nPowTargetSpacing = 300; // 5 minutes
         consensus.fPowAllowMinDifficultyBlocks = false;
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
@@ -104,39 +103,119 @@ public:
 
         // Deployment of BIP68, BIP112, and BIP113.
         consensus.vDeployments[Consensus::DEPLOYMENT_CSV].bit = 0;
-        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nStartTime = 1462060800; // May 1st, 2016
-        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nTimeout = 1493596800; // May 1st, 2017
+        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nStartTime = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nTimeout = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
         consensus.vDeployments[Consensus::DEPLOYMENT_CSV].type = Consensus::DEPLOYMENT_POW;
        
-        consensus.fixedRewardReductionHeight=250001;
-        consensus.pow2Phase2FirstBlockHeight=778177;
-        consensus.pow2Phase3FirstBlockHeight=778301;
-        consensus.devBlockSubsidyActivationHeight=1030001;
-        consensus.pow2Phase4FirstBlockHeight=1131652;
-        consensus.pow2Phase5FirstBlockHeight=1140958;
-        consensus.pow2WitnessSyncHeight=1'400'000;
-        consensus.halvingIntroductionHeight=consensus.pow2WitnessSyncHeight;     
-        consensus.finalSubsidyBlockHeight=433'009'988;
+        consensus.pow2Phase2FirstBlockHeight=0;
+        consensus.pow2Phase3FirstBlockHeight=0;
+        consensus.pow2Phase4FirstBlockHeight=0;
+        consensus.pow2Phase5FirstBlockHeight=0;
 
         // Message start string to avoid accidental cross communication with other chains or software.
-        pchMessageStart[0] = 0xfc; // 'N' + 0xb0
+        pchMessageStart[0] = 0xf7; // 'G' + 0xb0
         pchMessageStart[1] = 0xfe; // 'L' + 0xb0
-        pchMessageStart[2] = 0xf7; // 'G' + 0xb0
+        pchMessageStart[2] = 0xfc; // 'N' + 0xb0
         pchMessageStart[3] = 0xe0; // 0xe0 (e for "echt", testnet has 0x02 as last byte)
         vAlertPubKey = ParseHex("073513ffe7147aba88d33aea4da129d8a2829c545526d5d854ab51d5778f4d0625431ba1c5a3245bdfe8736b127fdfdb488de72640727d37355c4c3a66c547efad");
-        nDefaultPort = 9231;
+        nDefaultPort = 9241;
         nPruneAfterHeight = 200000;
+        
+        //PoW paramaters for SIGMA
+        defaultSigmaSettings.arenaSizeKb = 12*1024*1024;
+        defaultSigmaSettings.argonSlowHashRoundCost = 14;
+        defaultSigmaSettings.fastHashSizeBytes = 400;
+        defaultSigmaSettings.verify();
 
-        genesis = CreateGenesisBlock(1009843200, 2200095, 0x1e0ffff0, 1, 0);
+        {
+            numGenesisWitnesses = 400;
+            genesisWitnessWeightDivisor = 2000;
+            
+            // Don't bother creating the genesis block if we haven't started ECC yet (e.g. we are being called from the help text)
+            // We can't initialise key anyway unless the app has first initialised ECC, and the help doesn't need the genesis block, creating it twice is a waste of cpu cycles
+            {
+                CMutableTransaction txNew(CTransaction::CURRENT_VERSION);
+                txNew.vin.resize(1);
+                txNew.vin[0].SetPrevOutNull();
+                txNew.vin[0].segregatedSignatureData.stack.clear();
+                txNew.vin[0].segregatedSignatureData.stack.push_back(std::vector<unsigned char>());
+                CVectorWriter(0, 0, txNew.vin[0].segregatedSignatureData.stack[0], 0) << VARINT(0);
+                txNew.vin[0].segregatedSignatureData.stack.push_back({'F','M'});
+                
+                {
+                    CKeyID pubKeyIDWitness;
+                    pubKeyIDWitness.SetHex("624dc502c2dee9b3b4596371200832cdb92672f1");
+                    CKeyID pubKeyIDSpend;
+                    pubKeyIDSpend.SetHex("7e62e8262266147ce4ce98d43c58f61b9418bfea");
+
+                    CTxOut renewedWitnessTxOutput;
+                    renewedWitnessTxOutput.SetType(CTxOutType::PoW2WitnessOutput);
+                    renewedWitnessTxOutput.output.witnessDetails.spendingKeyID = pubKeyIDSpend;
+                    renewedWitnessTxOutput.output.witnessDetails.witnessKeyID = pubKeyIDWitness;
+                    renewedWitnessTxOutput.output.witnessDetails.lockFromBlock = 1;
+                    renewedWitnessTxOutput.output.witnessDetails.lockUntilBlock = std::numeric_limits<uint64_t>::max();
+                    renewedWitnessTxOutput.output.witnessDetails.failCount = 0;
+                    renewedWitnessTxOutput.output.witnessDetails.actionNonce = 1;
+                    renewedWitnessTxOutput.nValue=0;
+                    for (uint32_t i=0; i<numGenesisWitnesses;++i)
+                    {
+                        txNew.vout.push_back(renewedWitnessTxOutput);
+                    }
+                }
+                
+                {
+                    std::vector<unsigned char> data(ParseHex(devSubsidyAddress));
+                    CPubKey addressPubKey(data.begin(), data.end());
+                    
+                    // Premine; break into multiple parts so that its easier to use for ICO payouts (1'928'950'000 total)
+                    CTxOut subsidyOutput;
+                    subsidyOutput.SetType(CTxOutType::StandardKeyHashOutput);
+                    subsidyOutput.output.standardKeyHash = CTxOutStandardKeyHash(addressPubKey.GetID());
+                    subsidyOutput.nValue = 100'000'000*COIN;
+                    for (int i=0;i<19;++i)
+                    {
+                        txNew.vout.push_back(subsidyOutput);
+                    }
+                    subsidyOutput.nValue = 28'950'000*COIN;
+                    txNew.vout.push_back(subsidyOutput);
+                }
+
+                genesis.nTime    = 1701239350;
+                genesis.nBits    = arith_uint256((~arith_uint256(0) >> 10)).GetCompact();
+                genesis.nNonce   = 1107361822;
+                genesis.nVersion = 536870912;
+                genesis.vtx.push_back(MakeTransactionRef(std::move(txNew)));
+                genesis.hashPrevBlock.SetNull();
+                genesis.hashMerkleRoot = BlockMerkleRoot(genesis.vtx.begin(), genesis.vtx.end());
+                genesis.hashMerkleRootPoW2Witness = BlockMerkleRoot(genesis.vtx.begin(), genesis.vtx.end());
+                genesis.witnessHeaderPoW2Sig.resize(65);
+                
+                genesis.nTimePoW2Witness = genesis.nTime+1;
+                genesis.nVersionPoW2Witness = genesis.nVersion;
+            }
+        }
+        /*uint256 foundBlockHash;
+        std::atomic<uint64_t> halfHashCounter=0;
+        bool interrupt=false;
+        sigma_context generateContext(defaultSigmaSettings, defaultSigmaSettings.arenaSizeKb, std::max(GetNumCores(), 1), std::max(GetNumCores(), 1));
+        generateContext.prepareArenas(genesis);
+        generateContext.mineBlock(&genesis, halfHashCounter, foundBlockHash, interrupt);
+        
+        printf("genesis nonce: %d\n",genesis.nNonce);
+        printf("genesis time: %d\n",genesis.nTime);
+        printf("genesis bits: %d\n",genesis.nBits);
+        printf("genesis hash: %s\n", consensus.hashGenesisBlock.ToString().c_str());
+        printf("genesis hashMerkleRoot: %s\n", genesis.hashMerkleRoot.ToString().c_str());
+        printf("genesis hashMerkleRootPoW2Witness: %s\n", genesis.hashMerkleRootPoW2Witness.ToString().c_str());*/
+
         consensus.hashGenesisBlock = genesis.GetHashPoW2();
-        assert(consensus.hashGenesisBlock == uint256S("0x6c5d71a461b5bff6742bb62e5be53978b8dec5103ce52d1aaab8c6a251582f92"));
-        assert(genesis.hashMerkleRoot == uint256S("0x4bed0bcb3e6097445ae68d455137625bb66f0e7ba06d9db80290bf72e3d6dcf8"));
+        
+        assert(consensus.hashGenesisBlock == uint256S("0c54c6233b72dbd8ebbf0e5baf3624f0390b7c42217be7032523252ffefc88292a"));
+        assert(genesis.hashMerkleRoot == uint256S("0xe91e0d6b1223b0861b9148c9a97d23aba897250deb394b9cce4f31ce1b00ec6c"));
+        assert(genesis.hashMerkleRootPoW2Witness == uint256S("0xe91e0d6b1223b0861b9148c9a97d23aba897250deb394b9cce4f31ce1b00ec6c"));
 
-        vSeeds.push_back(CDNSSeedData("seed 0",  "seed.gulden.com", false));
-        vSeeds.push_back(CDNSSeedData("seed 1",  "amsterdam.gulden.com", false));
-        vSeeds.push_back(CDNSSeedData("seed 2",  "rotterdam.gulden.network", false));
-        //vSeeds.push_back(CDNSSeedData("seed 3",  "seed.gulden.network"));
-        //vSeeds.push_back(CDNSSeedData("seed 4",  "seed.gulden.blue"));
+        vSeeds.push_back(CDNSSeedData("seed 0",  "seed0.gulden.com", false));
+        vSeeds.push_back(CDNSSeedData("seed 2",  "seed1.gulden.com", false));
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,38);// 'G'
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,98);// 'g'
@@ -167,9 +246,9 @@ public:
         {
             consensus.defaultAssumeValid = uint256S("");
         }
-
+        
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0000000000000000000000000000000000000000000000013805bf50536e6868");
+        consensus.nMinimumChainWork = uint256S("0000000000000000000000000000000000000000000000000000000000000000");
     }
 };
 
@@ -254,11 +333,16 @@ public:
 
         strNetworkID = "test";
         consensus.BIP34Height = 21111;
-        consensus.BIP34Hash = uint256S("0x0000000023b3a96d3484e5abb3755c413e7d41500f8e2a5c3f0dd01299cd8ef8");
         consensus.BIP65Height = 581885; // 00000000007f6655f22f98e72ed80d8b06dc761d5da09df0fa1dc4be4f861eb6
         consensus.BIP66Height = 330776; // 000000002104c8c45e99a8853285a3b592602a3ccde2b832481da85e9e4ba182
         consensus.powLimit =  uint256S("0x003fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
+
+        //PoW paramaters for SIGMA
+        defaultSigmaSettings.arenaSizeKb = 4*1024*1024;
+        defaultSigmaSettings.argonSlowHashRoundCost = 12;
+        defaultSigmaSettings.fastHashSizeBytes = 300;
+        defaultSigmaSettings.verify();
 
         std::string sTestnetParams = GetArg("-testnet", "");
         if (!sTestnetParams.empty())
@@ -269,11 +353,11 @@ public:
             int targetInterval = atoi(sTestnetParams.substr(sTestnetParams.find(":")+1));
             int64_t seedTimestamp = atoi64(sTestnetParams.substr(1,sTestnetParams.find(":")));
 
-            defaultSigmaSettings.activationDate = seedTimestamp+300;
-            if (sTestnetParams == "S1596003003:60")
+            if (sTestnetParams == "S1595347850:60")
             {
                 fIsOfficialTestnetV1 = true;
             }
+            defaultSigmaSettings.activationDate = seedTimestamp+300;
 
             consensus.nPowTargetSpacing = targetInterval;
             consensus.fPowAllowMinDifficultyBlocks = false;
@@ -305,35 +389,81 @@ public:
                 consensus.defaultAssumeValid = uint256S("");
             }
 
-            consensus.fixedRewardReductionHeight=1;
             consensus.pow2Phase2FirstBlockHeight=0;
             consensus.pow2Phase3FirstBlockHeight=0;
-            consensus.devBlockSubsidyActivationHeight=1;
             consensus.pow2Phase4FirstBlockHeight=0;
             consensus.pow2Phase5FirstBlockHeight=0;
-            if (fIsOfficialTestnetV1)
-            {
-                consensus.pow2WitnessSyncHeight=352200;
-            }
-            else
-            {
-                consensus.pow2WitnessSyncHeight=10;
-            }
-            consensus.halvingIntroductionHeight=consensus.pow2WitnessSyncHeight;       
-            consensus.finalSubsidyBlockHeight=17727500;
 
             numGenesisWitnesses = 10;
             genesisWitnessWeightDivisor = 100;
-            
-            if (fIsOfficialTestnetV1)
+                
+            // Don't bother creating the genesis block if we haven't started ECC yet (e.g. we are being called from the help text)
+            // We can't initialise key anyway unless the app has first initialised ECC, and the help doesn't need the genesis block, creating it twice is a waste of cpu cycles
             {
-                GenerateGenesisBlock(genesis, sTestnetParams, genesisWitnessPrivKey, numGenesisWitnesses, 1596003003, 524287999, 4131389449, false, false, consensus);
+                ECC_Start();
+                {
+                    CMutableTransaction txNew(CTransaction::CURRENT_VERSION);
+                    txNew.vin.resize(1);
+                    txNew.vin[0].SetPrevOutNull();
+                    txNew.vin[0].segregatedSignatureData.stack.clear();
+                    txNew.vin[0].segregatedSignatureData.stack.push_back(std::vector<unsigned char>());
+                    CVectorWriter(0, 0, txNew.vin[0].segregatedSignatureData.stack[0], 0) << VARINT(0);
+                    txNew.vin[0].segregatedSignatureData.stack.push_back(ParseHex("4f6e206a616e756172692031737420746865204475746368206c6f73742074686572652062656c6f7665642047756c64656e"));
+                    
+                    {
+                        std::string sKey = sTestnetParams;
+                        sKey.resize(32, 0);
+                        genesisWitnessPrivKey.Set((unsigned char*)&sKey[0],(unsigned char*)&sKey[0]+32, true);
+                        
+                        CTxOut renewedWitnessTxOutput;
+                        renewedWitnessTxOutput.SetType(CTxOutType::PoW2WitnessOutput);
+                        renewedWitnessTxOutput.output.witnessDetails.spendingKeyID = genesisWitnessPrivKey.GetPubKey().GetID();
+                        renewedWitnessTxOutput.output.witnessDetails.witnessKeyID = genesisWitnessPrivKey.GetPubKey().GetID();
+                        renewedWitnessTxOutput.output.witnessDetails.lockFromBlock = 1;
+                        renewedWitnessTxOutput.output.witnessDetails.lockUntilBlock = 900000;
+                        renewedWitnessTxOutput.output.witnessDetails.failCount = 0;
+                        renewedWitnessTxOutput.output.witnessDetails.actionNonce = 1;
+                        renewedWitnessTxOutput.nValue=0;
+                        for (uint32_t i=0; i<numGenesisWitnesses;++i)
+                        {
+                            txNew.vout.push_back(renewedWitnessTxOutput);
+                        }
+                    }
+
+                    if (fIsOfficialTestnetV1)
+                    {
+                        genesis.nTime    = 1595347850;
+                        genesis.nBits    = 524287999;
+                        genesis.nNonce   = 1449001013;
+                    }
+                    else
+                    {
+                        genesis.nTime    = seedTimestamp;
+                        genesis.nBits    = arith_uint256((~arith_uint256(0) >> 10)).GetCompact();
+                        genesis.nNonce   = 0;
+                    }
+                    genesis.nVersion = 536870912;
+                    genesis.vtx.push_back(MakeTransactionRef(std::move(txNew)));
+                    genesis.hashPrevBlock.SetNull();
+                    genesis.hashMerkleRoot = BlockMerkleRoot(genesis.vtx.begin(), genesis.vtx.end());
+                    genesis.hashMerkleRootPoW2Witness = BlockMerkleRoot(genesis.vtx.begin(), genesis.vtx.end());
+                    genesis.witnessHeaderPoW2Sig.resize(65);
+
+                    if (!fIsOfficialTestnetV1)
+                    {
+                        uint256 foundBlockHash;
+                        std::atomic<uint64_t> halfHashCounter=0;
+                        std::atomic<uint64_t> nThreadCounter=0;
+                        bool interrupt=false;
+                        sigma_context generateContext(defaultSigmaSettings, defaultSigmaSettings.arenaSizeKb, std::max(GetNumCores(), 1), std::max(GetNumCores(), 1));
+                        generateContext.prepareArenas(genesis);
+                        generateContext.mineBlock(&genesis, halfHashCounter, foundBlockHash, interrupt);
+                    }
+                    genesis.nTimePoW2Witness = genesis.nTime+1;
+                    genesis.nVersionPoW2Witness = genesis.nVersion;
+                }
+                ECC_Stop();
             }
-            else
-            {
-                GenerateGenesisBlock(genesis, sTestnetParams, genesisWitnessPrivKey, numGenesisWitnesses, seedTimestamp, arith_uint256((~arith_uint256(0) >> 10)).GetCompact(), 0, true, true, consensus);
-            }
-            
             consensus.hashGenesisBlock = genesis.GetHashPoW2();
             LogPrintf("genesis nonce: %d\n",genesis.nNonce);
             LogPrintf("genesis time: %d\n",genesis.nTime);
@@ -349,7 +479,7 @@ public:
         }
 
         vAlertPubKey = ParseHex("06087071e40ddf2ecbdf1ae40f536fa8f78e9383006c710dd3ecce957a3cb9292038d0840e3be5042a6b863f75dfbe1cae8755a0f7887ae459af689f66caacab52");
-        nDefaultPort = 9923;
+        nDefaultPort = 9243;
         nPruneAfterHeight = 1000;
 
         vFixedSeeds.clear();
@@ -376,7 +506,6 @@ public:
         if (fIsOfficialTestnetV1)
         {
             checkpointData = {
-            {      0, { uint256S("0x924d4d8a9601594dc5a2adf14cefc354e9df230cb5215d5f42b61d0da60e0b03"), 1596003004 } },
             };
             if (!checkpointData.empty())
             {
@@ -399,7 +528,6 @@ public:
         fIsRegtestLegacy = true;
         strNetworkID = "regtestlegacy";
         consensus.BIP34Height = 100000000; // BIP34 has not activated on regtest (far in the future so block v1 are not rejected in tests)
-        consensus.BIP34Hash = uint256();
         consensus.BIP65Height = 1351; // BIP65 activated on regtest (Used in rpc activation tests)
         consensus.BIP66Height = 1251; // BIP66 activated on regtest (Used in rpc activation tests)
         consensus.powLimit = uint256S("0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
@@ -423,10 +551,8 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nTimeout = 999999999999ULL;
         consensus.vDeployments[Consensus::DEPLOYMENT_CSV].type = Consensus::DEPLOYMENT_POW;
 
-        consensus.fixedRewardReductionHeight=40600;
         consensus.pow2Phase2FirstBlockHeight=40800;
         consensus.pow2Phase3FirstBlockHeight=50000;
-        consensus.devBlockSubsidyActivationHeight=50100;
         consensus.pow2Phase4FirstBlockHeight=50500;
         consensus.pow2Phase5FirstBlockHeight=50500;
 
@@ -443,9 +569,9 @@ public:
             consensus.defaultAssumeValid = uint256S("");
         }
 
-        pchMessageStart[0] = 0xfc; // 'N' + 0xb0
+        pchMessageStart[0] = 0xf7; // 'G' + 0xb0
         pchMessageStart[1] = 0xfe; // 'L' + 0xb0
-        pchMessageStart[2] = 0xf7; // 'G' + 0xb0
+        pchMessageStart[2] = 0xfc; // 'N' + 0xb0
         pchMessageStart[3] = 0xFF; // 0xFF
         nDefaultPort = 18444;
         nPruneAfterHeight = 1000;
@@ -484,7 +610,6 @@ public:
         fIsRegtest = true;
         strNetworkID = "regtest";
         consensus.BIP34Height = 0;
-        consensus.BIP34Hash = uint256();
         consensus.BIP65Height = 1351; // BIP65 activated on regtest (Used in rpc activation tests)
         consensus.BIP66Height = 1251; // BIP66 activated on regtest (Used in rpc activation tests)
         consensus.powLimit = uint256S("0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
@@ -508,14 +633,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nTimeout = 999999999999ULL;
         consensus.vDeployments[Consensus::DEPLOYMENT_CSV].type = Consensus::DEPLOYMENT_POW;
 
-        consensus.fixedRewardReductionHeight=1;
         consensus.pow2Phase2FirstBlockHeight=0;
         consensus.pow2Phase3FirstBlockHeight=0;
-        consensus.devBlockSubsidyActivationHeight=1;
         consensus.pow2Phase4FirstBlockHeight=0;
         consensus.pow2Phase5FirstBlockHeight=0;
-        consensus.halvingIntroductionHeight=consensus.pow2WitnessSyncHeight;
-        consensus.finalSubsidyBlockHeight=17727500;
         numGenesisWitnesses = 10;
         genesisWitnessWeightDivisor = 100;
 

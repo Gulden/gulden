@@ -22,6 +22,7 @@
 
 //fixme: (PHASE5) - we can remove these includes
 #include "witnessutil.h"
+#include "validation/validation.h"
 
 CAmount GetDustThreshold(const CTxOut& txout, const CFeeRate& dustRelayFeeIn)
 {
@@ -85,7 +86,21 @@ bool IsStandard(const CScript& scriptPubKey, txnouttype& whichType, const bool s
 
 bool IsStandardTx(const CTransaction& tx, std::string& reason, int nPoW2Version, const bool segsigEnabled)
 {
-    if (tx.nVersion > CTransaction::MAX_STANDARD_VERSION || tx.nVersion < CTransaction::SEGSIG_ACTIVATION_VERSION) {
+    if (tx.nVersion > CTransaction::MAX_STANDARD_VERSION || tx.nVersion < 1) {
+        reason = "version";
+        return false;
+    }
+
+    //fixme: (PHASE5) we can combine this with the rule above once we are locked into phase 5.
+    // Refuse to relay new style transactions, or transactions pretending to be new style transactions before phase 4 starts.
+    // Refuse to relay old style transactions once phase 4 is active.
+    if (nPoW2Version < 4 && !IsOldTransactionVersion(tx.nVersion))
+    {
+        reason = "version";
+        return false;
+    }
+    else if (nPoW2Version >= 4 && IsOldTransactionVersion(tx.nVersion))
+    {
         reason = "version";
         return false;
     }
@@ -244,7 +259,7 @@ bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs)
                     if (tx.vin[i].scriptSig.size() != 0)
                         return false;
                     CScript scriptSigTemp = PushAll(tx.vin[i].segregatedSignatureData.stack);
-                    if (!EvalScript(stack, scriptSigTemp, SCRIPT_VERIFY_NONE, BaseSignatureChecker(CKeyID(), CKeyID()), IsOldTransactionVersion(tx.nVersion) ? SCRIPT_V1 : SCRIPT_V2))
+                    if (!EvalScript(stack, scriptSigTemp, SCRIPT_VERIFY_NONE, BaseSignatureChecker(CKeyID(), CKeyID()), SCRIPT_V2))
                         return false;
                 }
                 if (stack.empty())
@@ -307,7 +322,7 @@ int64_t GetVirtualTransactionSize(const CTransaction& tx, int64_t nSigOpCost)
     return GetVirtualTransactionSize(GetTransactionWeight(tx), nSigOpCost);
 }
 
-const uint64_t STANDARD_COINBASE_INPUT_SIZE_DISCOUNT = 60;
+const uint64_t STANDARD_COINBASE_INPUT_SIZE_DISCOUNT = 70;
 const uint64_t STANDARD_COINBASE_SIGOP_COST_DISCOUNT = 1;   
 int64_t GetVirtualTransactionSizeDiscounted(int64_t nWeight, uint64_t numCoinbaseInputs, int64_t nSigOpCost)
 {

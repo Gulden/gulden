@@ -33,25 +33,15 @@ bool CheckProofOfWork(const CBlock* block, const Consensus::Params& params)
 
     bnTarget.SetCompact(block->nBits, &fNegative, &fOverflow);
 
-    static bool fRegTest = Params().IsRegtest();
-    static bool fRegTestLegacy = Params().IsRegtestLegacy();
-    if (!(fRegTest||fRegTestLegacy) && block->nTime > 1571320800)
-    {
-        uint256 newProofOfWorkLimit = uint256S("0x003fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        // Check range
-        if (fNegative || bnTarget == 0 || fOverflow || bnTarget > UintToArith256(newProofOfWorkLimit))
-            return false;
-    }
-    else
-    {
-        // Check range
-        if (fNegative || bnTarget == 0 || fOverflow || bnTarget > UintToArith256(params.powLimit))
-            return false;
-    }
+    defaultSigmaSettings.verify();
+    
+    // Check range
+    if (fNegative || bnTarget == 0 || fOverflow || bnTarget > UintToArith256(params.powLimit))
+        return false;
 
     //fixme: (SIGMA) - Post activation we can simplify this.
     // Check proof of work matches claimed amount
-    if (block->nTime > defaultSigmaSettings.activationDate)
+    if (block->nTime > 1701239346)
     {
         #ifdef VALIDATION_MOBILE
             //fixme: (SIGMA) (PHASE5) (HIGH) Remove/improve this once we have witness-header-sync; this is a temporary measure to keep SPV performance adequate on low power devices for now.
@@ -105,7 +95,7 @@ bool CheckProofOfWork(const CBlock* block, const Consensus::Params& params)
             return verify.verifyHeader<0>(*block);
         #endif
     }
-    else
+    else if (block->nTime <= defaultSigmaSettings.activationDate)
     {
         if (UintToArith256(block->GetPoWHash()) > bnTarget)
             return false;

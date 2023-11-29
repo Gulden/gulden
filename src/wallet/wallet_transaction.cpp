@@ -977,12 +977,16 @@ bool CWallet::PrepareRenewWitnessAccountTransaction(CAccount* funderAccount, CAc
     }
     GetWitnessInfo(chainActive, Params(), nullptr, chainActive.Tip()->pprev, block, witnessInfo, chainActive.Tip()->nHeight);
     bool addedAny=false;
+    uint64_t nExpiredCount=0;
     for (const auto& witCoin : witnessInfo.witnessSelectionPoolUnfiltered)
     {
         if (::IsMine(*targetWitnessAccount, witCoin.coin.out))
         {
             if (witnessHasExpired(witCoin.nAge, witCoin.nWeight, witnessInfo.nTotalWeightRaw))
             {
+                if (skipPastTransaction && nExpiredCount++ < *skipPastTransaction)
+                    continue;
+
                 addedAny = true;
                
                 // Add witness input
@@ -996,16 +1000,6 @@ bool CWallet::PrepareRenewWitnessAccountTransaction(CAccount* funderAccount, CAc
                     strError = "Unable to correctly retrieve data";
                     return false;
                 }
-                
-                if (!HaveKey(witnessDestination.spendingKeyID))
-                {
-                    strError = strprintf("Spending key for [%s] not available in wallet", CNativeAddress(CPoW2WitnessDestination(witnessDestination.spendingKeyID, witnessDestination.witnessKeyID)).ToString());
-                }
-                
-                if (!HaveKey(witnessDestination.witnessKeyID))
-                {
-                    strError = strprintf("Witness key for [%s] not available in wallet", CNativeAddress(CPoW2WitnessDestination(witnessDestination.spendingKeyID, witnessDestination.witnessKeyID)).ToString());
-                }
 
                 // Increment fail count appropriately
                 IncrementWitnessFailCount(witnessDestination.failCount);
@@ -1015,6 +1009,7 @@ bool CWallet::PrepareRenewWitnessAccountTransaction(CAccount* funderAccount, CAc
                 {
                     witnessDestination.lockFromBlock = witCoin.coin.nHeight;
                 }
+
 
                 if (GetPoW2Phase(chainActive.Tip()) >= 4)
                 {
@@ -1045,6 +1040,11 @@ bool CWallet::PrepareRenewWitnessAccountTransaction(CAccount* funderAccount, CAc
                 CKey privWitnessKey;
                 targetWitnessAccount->GetKey(witnessDestination.witnessKeyID, privWitnessKey);
                 targetWitnessAccount->AddKeyPubKey(privWitnessKey, privWitnessKey.GetPubKey(), KEYCHAIN_WITNESS);
+
+                //fixme: (PHASE5) - Remove this and do all in one tx instead (see note in tx_verify) as blockchain must support this first
+                if(skipPastTransaction)
+                    *skipPastTransaction = nExpiredCount;
+                break;
             }
         }
     }

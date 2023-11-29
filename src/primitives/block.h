@@ -21,7 +21,9 @@
 #include "util.h"
 #include <crypto/hash/hash.h>
 
+#ifdef WITNESS_HEADER_SYNC
 #define SERIALIZE_BLOCK_HEADER_NO_WITNESS_DELTA    0x10000000
+#endif
 #define SERIALIZE_BLOCK_HEADER_NO_POW2_WITNESS     0x20000000
 #define SERIALIZE_BLOCK_HEADER_NO_POW2_WITNESS_SIG 0x40000000
 
@@ -64,9 +66,10 @@ public:
     //fixme: (POST-PHASE5) Optimisation - this is always 65 bits, we should use a fixed size data structure.
     std::vector<unsigned char> witnessHeaderPoW2Sig;
     
+    #ifdef WITNESS_HEADER_SYNC
     // Changes in the witness UTXO that this block causes
     std::vector<unsigned char> witnessUTXODelta;
-
+    #endif
 
     // PoW header
     int32_t nVersion;
@@ -111,11 +114,11 @@ public:
         READWRITE(nNonce);
 
         //fixme: (PHASE5) Remove support for legacy nodes - no longer need this once phase4 is locked in.
-        if (nVersionPoW2Witness != 0)
+        if (!(s.GetVersion() & SERIALIZE_BLOCK_HEADER_NO_POW2_WITNESS))
         {
-            if (!(s.GetVersion() & SERIALIZE_BLOCK_HEADER_NO_POW2_WITNESS))
+            if (!(s.GetVersion() & SERIALIZE_BLOCK_HEADER_NO_POW2_WITNESS_SIG))
             {
-                if (!(s.GetVersion() & SERIALIZE_BLOCK_HEADER_NO_POW2_WITNESS_SIG))
+                if (nVersionPoW2Witness != 0)
                 {
                     if (ser_action.ForRead())
                         witnessHeaderPoW2Sig.resize(65);
@@ -124,6 +127,7 @@ public:
                     READWRITENOSIZEVECTOR(witnessHeaderPoW2Sig);
                 }
                 
+                #ifdef WITNESS_HEADER_SYNC
                 if (!(s.GetVersion() & SERIALIZE_BLOCK_HEADER_NO_WITNESS_DELTA))
                 {
                     if( (s.GetType() == SER_DISK) || 
@@ -134,6 +138,7 @@ public:
                         READWRITECOMPACTSIZEVECTOR(witnessUTXODelta);
                     }
                 }
+                #endif
             }
         }
     }
@@ -151,7 +156,9 @@ public:
         nTimePoW2Witness = 0;
         hashMerkleRootPoW2Witness.SetNull();
         witnessHeaderPoW2Sig.clear();
+        #ifdef WITNESS_HEADER_SYNC
         witnessUTXODelta.clear();
+        #endif
     }
 
     bool IsNull() const
@@ -231,7 +238,9 @@ public:
         block.nTimePoW2Witness = nTimePoW2Witness;
         block.hashMerkleRootPoW2Witness = hashMerkleRootPoW2Witness;
         block.witnessHeaderPoW2Sig = witnessHeaderPoW2Sig;
+        #ifdef WITNESS_HEADER_SYNC
         block.witnessUTXODelta = witnessUTXODelta;
+        #endif
         return block;
     }
 

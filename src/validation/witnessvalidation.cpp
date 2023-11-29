@@ -26,7 +26,9 @@
 
 CWitViewDB *ppow2witdbview = NULL;
 std::shared_ptr<CCoinsViewCache> ppow2witTip = NULL;
+#ifdef WITNESS_HEADER_SYNC
 SimplifiedWitnessUTXOSet pow2SimplifiedWitnessUTXO;
+#endif
 
 //fixme: (PHASE5) Can remove this.
 int GetPoW2WitnessCoinbaseIndex(const CBlock& block)
@@ -165,7 +167,7 @@ static bool ForceActivateChainStep(CValidationState& state, CChain& currentChain
                 if (!ReadBlockFromDisk(block, pindexConnect, chainparams))
                     return false;
             }
-            bool rv = ConnectBlock(currentChain, pblockConnect?*pblockConnect:*pblock, state, pindexConnect, coinView, chainparams, false, false, false, false);
+            bool rv = ConnectBlock(currentChain, pblockConnect?*pblockConnect:*pblock, state, pindexConnect, coinView, chainparams, false, false, false);
             if (!rv)
                 return false;
             currentChain.SetTip(pindexConnect);
@@ -247,7 +249,7 @@ uint64_t estimatedWitnessBlockPeriod(uint64_t nWeight, uint64_t networkTotalWeig
 }
 
 
-bool getAllUnspentWitnessCoins(CChain& chain, const CChainParams& chainParams, const CBlockIndex* pPreviousIndexChain_, std::map<COutPoint, Coin>& allWitnessCoins, CBlock* newBlock, CCoinsViewCache* viewOverride, bool forceIndexBased)
+bool getAllUnspentWitnessCoins(CChain& chain, const CChainParams& chainParams, const CBlockIndex* pPreviousIndexChain_, std::map<COutPoint, Coin>& allWitnessCoins, CBlock* newBlock, CCoinsViewCache* viewOverride)
 {
     DO_BENCHMARK("WIT: getAllUnspentWitnessCoins", BCLog::BENCH|BCLog::WITNESS);
 
@@ -320,19 +322,17 @@ bool getAllUnspentWitnessCoins(CChain& chain, const CChainParams& chainParams, c
             newBlock->nTimePoW2Witness = 0;
             newBlock->hashMerkleRootPoW2Witness = uint256();
             newBlock->witnessHeaderPoW2Sig.clear();
-            newBlock->witnessUTXODelta.clear();
         }
 
         // Place the block in question at the tip of the chain.
-        CBlockIndex* indexDummy = new CBlockIndex(*newBlock);
-        indexDummy->pprev = pPreviousIndexChain;
-        indexDummy->nHeight = pPreviousIndexChain->nHeight + 1;
-        if (!ConnectBlock(tempChain, *newBlock, state, indexDummy, viewNew, chainParams, true, false, false, false))
+        CBlockIndex indexDummy(*newBlock);
+        indexDummy.pprev = pPreviousIndexChain;
+        indexDummy.nHeight = pPreviousIndexChain->nHeight + 1;
+        if (!ConnectBlock(tempChain, *newBlock, state, &indexDummy, viewNew, chainParams, true, false, false))
         {
             //fixme: (PHASE5) If we are inside a GetWitness call ban the peer that sent us this?
             return false;
         }
-        tempChain.SetTip(indexDummy);
     }
 
     /** Gather a list of all unspent witness outputs.
@@ -341,14 +341,7 @@ bool getAllUnspentWitnessCoins(CChain& chain, const CChainParams& chainParams, c
         For each iteration we should remove items from allWitnessCoins if they have been deleted in the higher layer as the higher layer overrides the lower layer.
         GetAllCoins takes care of all of this automatically.
     **/
-    if (forceIndexBased || (uint64_t)tempChain.Tip()->nHeight >= Params().GetConsensus().pow2WitnessSyncHeight)
-    {
-        viewNew.pChainedWitView->GetAllCoinsIndexBased(allWitnessCoins);
-    }
-    else
-    {
-        viewNew.pChainedWitView->GetAllCoins(allWitnessCoins);
-    }
+    viewNew.pChainedWitView->GetAllCoins(allWitnessCoins);
 
     return true;
 }
@@ -425,7 +418,14 @@ bool GetWitnessHelper(uint256 blockHash, CGetWitnessInfo& witnessInfo, uint64_t 
     uint64_t genesisWeight=0;
     if (Params().numGenesisWitnesses > 0)
     {
-        genesisWeight = std::max(witnessInfo.nTotalWeightEligibleRaw / Params().genesisWitnessWeightDivisor, (uint64_t)1000);
+        if (nBlockHeight > 300)
+        {
+            genesisWeight = std::max(witnessInfo.nTotalWeightEligibleRaw / Params().genesisWitnessWeightDivisor, (uint64_t)1);
+        }
+        else
+        {
+            genesisWeight = std::max(witnessInfo.nTotalWeightEligibleRaw / Params().genesisWitnessWeightDivisor, (uint64_t)1000);
+        }
         witnessInfo.nTotalWeightEligibleRaw += Params().numGenesisWitnesses*genesisWeight;
     }
     
@@ -433,7 +433,7 @@ bool GetWitnessHelper(uint256 blockHash, CGetWitnessInfo& witnessInfo, uint64_t 
     /** NB!! this actually will end up a little bit more than 1% as the overall network weight will also be reduced as a result. **/
     /** This is however unimportant as 1% is in and of itself also somewhat arbitrary, simpler code is favoured here over exactness. **/
     /** So we delibritely make no attempt to compensate for this. **/
-    witnessInfo.nMaxIndividualWeight = witnessInfo.nTotalWeightEligibleRaw / 100;
+    witnessInfo.nMaxIndividualWeight = std::max(witnessInfo.nTotalWeightEligibleRaw / 100, (uint64_t)1);
     witnessInfo.nTotalWeightEligibleAdjusted = 0;
     for (auto& item : witnessInfo.witnessSelectionPoolFiltered)
     {
@@ -466,9 +466,6 @@ bool GetWitnessHelper(uint256 blockHash, CGetWitnessInfo& witnessInfo, uint64_t 
     auto selectedWitness = std::lower_bound(witnessInfo.witnessSelectionPoolFiltered.begin(), witnessInfo.witnessSelectionPoolFiltered.end(), rouletteSelectionSeed.GetLow64());
     witnessInfo.selectedWitnessTransaction = selectedWitness->coin.out;
     witnessInfo.selectedWitnessIndex = selectedWitness-(witnessInfo.witnessSelectionPoolFiltered.begin());
-    #ifdef DEBUG
-    assert((witnessInfo.witnessSelectionPoolFiltered[witnessInfo.selectedWitnessIndex].coin.out == selectedWitness->coin.out));
-    #endif
     witnessInfo.selectedWitnessBlockHeight = selectedWitness->coin.nHeight;
     witnessInfo.selectedWitnessOutpoint = selectedWitness->outpoint;
 
@@ -489,15 +486,13 @@ bool GetWitnessInfo(CChain& chain, const CChainParams& chainParams, CCoinsViewCa
     if (!getAllUnspentWitnessCoins(chain, chainParams, pPreviousIndexChain, witnessInfo.allWitnessCoins, &block, viewOverride))
         return false;
 
-    bool outputsShouldBeHashes = (nBlockHeight < Params().GetConsensus().pow2WitnessSyncHeight);
-
     // Gather all witnesses that exceed minimum weight and count the total witness weight.
     for (auto coinIter : witnessInfo.allWitnessCoins)
     {
         //fixme: (PHASE5) Unit tests
         uint64_t nAge = nBlockHeight - coinIter.second.nHeight;
         COutPoint outPoint = coinIter.first;
-        assert(outPoint.isHash == outputsShouldBeHashes);
+        assert(outPoint.isHash);
         Coin coin = coinIter.second;
         if (coin.out.nValue >= (gMinimumWitnessAmount*COIN))
         {
@@ -536,7 +531,7 @@ bool GetWitness(CChain& chain, const CChainParams& chainParams, CCoinsViewCache*
     return GetWitnessHelper(block.GetHashLegacy(), witnessInfo, nBlockHeight);
 }
 
-
+#ifdef WITNESS_HEADER_SYNC
 bool GetWitnessFromSimplifiedUTXO(SimplifiedWitnessUTXOSet simplifiedWitnessUTXO, const CBlockIndex* pBlockIndex, CGetWitnessInfo& witnessInfo)
 {
     DO_BENCHMARK("WIT: GetWitnessFromSimplifiedUTXO", BCLog::BENCH|BCLog::WITNESS);
@@ -627,6 +622,7 @@ bool GetWitnessFromUTXO(std::vector<RouletteItem> witnessUtxo, CBlockIndex* pBlo
 
     return GetWitnessHelper(pBlockIndex->GetBlockHashLegacy(), witnessInfo, nBlockHeight);
 }
+#endif
 
 // Ideally this should have been some hybrid of witInfo.nTotalWeight / witInfo.nReducedTotalWeight - as both independantly aren't perfect.
 // Total weight is prone to be too high if there are lots of large >1% witnesses, nReducedTotalWeight is prone to be too low if there is one large witness who has recently witnessed.
@@ -641,6 +637,7 @@ bool witnessHasExpired(uint64_t nWitnessAge, uint64_t nWitnessWeight, uint64_t n
     return ( nWitnessAge > gMaximumParticipationAge ) || ( nWitnessAge > nExpectedWitnessPeriod );
 }
 
+#ifdef WITNESS_HEADER_SYNC
 const char changeTypeCreation = 0;
 const char changeTypeSpend = 1;
 const char changeTypeRenew = 2;
@@ -1735,3 +1732,4 @@ bool GetSimplifiedWitnessUTXODeltaForBlock(const CBlockIndex* pBlockIndex, const
     
     return true;
 }
+#endif

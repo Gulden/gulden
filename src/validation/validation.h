@@ -85,9 +85,9 @@ static const bool DEFAULT_WHITELISTRELAY = true;
 /** Default for DEFAULT_WHITELISTFORCERELAY. */
 static const bool DEFAULT_WHITELISTFORCERELAY = true;
 /** Default for -minrelaytxfee, minimum relay fee for transactions */
-static const unsigned int DEFAULT_MIN_RELAY_TX_FEE = 1000;
+static const unsigned int DEFAULT_MIN_RELAY_TX_FEE = 100;
 //! -maxtxfee default
-static const CAmount DEFAULT_TRANSACTION_MAXFEE = 2 * COIN;
+static const CAmount DEFAULT_TRANSACTION_MAXFEE = 1 * COIN;
 //! Discourage users to set fees higher than this amount (in satoshis) per kB
 static const CAmount HIGH_TX_FEE_PER_KB = 0.01 * COIN;
 //! -maxtxfee will warn if called with a higher fee than this amount (in satoshis)
@@ -268,6 +268,8 @@ extern CBlockIndex *pindexBestHeader;
 /** Best header sofar connecting to the partial chain. */
 extern CBlockIndex *pindexBestPartial;
 
+extern int64_t nMinimumInputValue;
+
 /** Minimum disk space required - used in CheckDiskSpace() */
 static const uint64_t nMinDiskSpace = 52428800;
 
@@ -371,8 +373,7 @@ struct BlockSubsidy
 
 /** The reward that must be paid out per block */
 BlockSubsidy GetBlockSubsidy(uint64_t nHeight);
-inline std::string devSubsidyAddress1 = "03ae258dc3463de883e9fbda5239353fe9dc98805cf31800d5a6eeaa3ed4afcc70";
-inline std::string devSubsidyAddress2 = "03f0ea45eb7fcf57c6f0f47f88004fd5a82641721890b9e6f4ae392efb858ce21e";
+inline std::string devSubsidyAddress = "03ae9ca77ebab653b797332f82e9faa5597755dd33256f0342f9a84442d3e368e0";
 
 /** Guess verification progress (as a fraction between 0.0=genesis and 1.0=current tip). */
 double GuessVerificationProgress(CBlockIndex* pindex);
@@ -633,7 +634,7 @@ DisconnectResult DisconnectBlock(const CBlock& block, const CBlockIndex* pindex,
 /** Apply the effects of this block (with given index) on the UTXO set represented by coins.
  *  Validity checks that depend on the UTXO set are also done; ConnectBlock()
  *  can fail if those validity checks fail (among other reasons). */
-bool ConnectBlock(CChain& chain, const CBlock& block, CValidationState& state, CBlockIndex* pindex, CCoinsViewCache& view, const CChainParams& chainparams, bool fJustCheck = false, bool fVerifyWitness=true, bool fVerifyWitnessDelta=true, bool fDoScriptChecks=true);
+bool ConnectBlock(CChain& chain, const CBlock& block, CValidationState& state, CBlockIndex* pindex, CCoinsViewCache& view, const CChainParams& chainparams, bool fJustCheck = false, bool fVerifyWitness=true, bool fDoScriptChecks=true);
 
 /** Context-dependent validity checks.
  *  By "context", we mean only the previous block headers, but not the UTXO

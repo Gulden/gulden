@@ -273,10 +273,8 @@ static UniValue getwitnessinfo(const JSONRPCRequest& request)
         pTipIndexEnd = pTipIndexStart = chainActive.Tip();
     }
 
-    if (!pTipIndexStart || (uint64_t)pTipIndexStart->nHeight < Params().GetConsensus().pow2Phase5FirstBlockHeight)
-        throw std::runtime_error("Requests block(s) from before phase 5 activation.");
-    if (!pTipIndexEnd || (uint64_t)pTipIndexEnd->nHeight < Params().GetConsensus().pow2Phase5FirstBlockHeight)
-        throw std::runtime_error("Requests block(s) from before phase 5 activation.");
+    if (!pTipIndexStart || (uint64_t)pTipIndexStart->nHeight < Params().GetConsensus().pow2Phase2FirstBlockHeight || pTipIndexStart->nHeight == 0)
+        return NullUniValue;
     
     if (pTipIndexStart->nHeight < pTipIndexEnd->nHeight)
     {
@@ -538,6 +536,7 @@ static UniValue getwitnessinfo(const JSONRPCRequest& request)
     return witnessInfoForBlocks;
 }
 
+#ifdef WITNESS_HEADER_SYNC
 static UniValue getwitnessutxo(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() > 1)
@@ -619,6 +618,7 @@ static UniValue getwitnessutxo(const JSONRPCRequest& request)
     }
     return witnessUTXO;
 }
+#endif
 
 static UniValue disablewitnessing(const JSONRPCRequest& request)
 {
@@ -662,10 +662,10 @@ static UniValue dumpfiltercheckpoints(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Cannot open wallet dump file");
 
     LogPrintf("Dumping filter checkpoints:\n");
-    int nStart = Params().IsTestnet() ? 0 : 250000;//Earliest possible recovery phrase (before this we didn't use phrases)
+    int nStart = 0;//Earliest possible recovery phrase (before this we didn't use phrases)
     int nInterval1 = 500;
     int nInterval2 = 100;
-    int nCrossOver = Params().IsTestnet() ? 200000 : 500000;
+    int nCrossOver = 10000;
     if (chainActive.Tip() != NULL)
     {
         LOCK2(cs_main, pactiveWallet->cs_wallet); // cs_main required for ReadBlockFromDisk.
@@ -1352,6 +1352,23 @@ static witnessOutputsInfoVector getCurrentOutputsForWitnessAddress(CNativeAddres
     return matchedOutputs;
 }
 
+static witnessOutputsInfoVector getCurrentOutputsForWitnessAccount(CAccount* forAccount)
+{
+    std::map<COutPoint, Coin> allWitnessCoins;
+    if (!getAllUnspentWitnessCoins(chainActive, Params(), chainActive.Tip(), allWitnessCoins))
+        throw std::runtime_error("Failed to enumerate all witness coins.");
+
+    witnessOutputsInfoVector matchedOutputs;
+    for (const auto& [outpoint, coin] : allWitnessCoins)
+    {
+        if (IsMine(*forAccount, coin.out))
+        {
+            matchedOutputs.push_back(std::tuple(coin.out, coin.nHeight, coin.nTxIndex, outpoint));
+        }
+    }
+    return matchedOutputs;
+}
+
 //! Given a string specifier, calculate a lock length in blocks to match it. e.g. 1d -> 576; 5b -> 5; 1m -> 17280
 //! Returns 0 if specifier is invalid.
 static uint64_t GetLockPeriodInBlocksFromFormattedStringSpecifier(std::string formattedLockPeriodSpecifier)
@@ -1412,8 +1429,8 @@ static UniValue fundwitnessaccount(const JSONRPCRequest& request)
             "\nArguments:\n"
             "1. \"funding_account\"      (string, required) The unique UUID or label for the account from which money will be removed. Use \"\" for the active account or \"*\" for all accounts to be considered.\n"
             "2. \"witness_account\"      (string, required) The unique UUID or label for the witness account that will hold the locked funds.\n"
-            "3. \"amount\"               (string, required) The amount of " GLOBAL_COIN_CODE " to hold locked in the witness account. Minimum amount of 5000 " GLOBAL_COIN_CODE " is allowed.\n"
-            "4. \"time\"                 (string, required) The time period for which the funds should be locked in the witness account. Minimum of 1 month and a maximum of 3 years. By default this is interpreted as blocks e.g. \"1000\", suffix with \"y\", \"m\", \"w\", \"d\", \"b\" to specifically work in years, months, weeks, days or blocks.\n"
+            "3. \"amount\"               (string, required) The amount of " GLOBAL_COIN_CODE " to hold locked in the witness account. Minimum amount of 50 " GLOBAL_COIN_CODE " is allowed.\n"
+            "4. \"time\"                 (string, required) The time period for which the funds should be locked in the witness account. Minimum of 2 months and a maximum of 3 years. By default this is interpreted as blocks e.g. \"1000\", suffix with \"y\", \"m\", \"w\", \"d\", \"b\" to specifically work in years, months, weeks, days or blocks.\n"
             "5. force_multiple         (boolean, optional, default=false) Allow funding an account that already contains a valid witness address. \n"
             "\nResult:\n"
             "[\n"
@@ -1421,13 +1438,13 @@ static UniValue fundwitnessaccount(const JSONRPCRequest& request)
             "     \"fee_amount\":n   (number) The fee that was paid.\n"
             "]\n"
             "\nExamples:\n"
-            "\nTake 10000" GLOBAL_COIN_CODE " out of \"mysavingsaccount\" and lock in \"mywitnessaccount\" for 2 years.\n"
-            + HelpExampleCli("fundwitnessaccount \"mysavingsaccount\" \"mywitnessaccount\" \"10000\" \"2y\"", "")
-            + "\nTake 10000" GLOBAL_COIN_CODE " out of \"mysavingsaccount\" and lock in \"mywitnessaccount\" for 2 months.\n"
-            + HelpExampleCli("fundwitnessaccount \"mysavingsaccount\" \"mywitnessaccount\" \"10000\" \"2m\"", "")
-            + "\nTake 10000" GLOBAL_COIN_CODE " out of \"mysavingsaccount\" and lock in \"mywitnessaccount\" for 100 days.\n"
-            + HelpExampleCli("fundwitnessaccount \"mysavingsaccount\" \"mywitnessaccount\" \"10000\" \"100d\"", "")
-            + HelpExampleRpc("fundwitnessaccount \"mysavingsaccount\" \"mywitnessaccount\" \"10000\" \"2y\"", ""));
+            "\nTake 100" GLOBAL_COIN_CODE " out of \"mysavingsaccount\" and lock in \"mywitnessaccount\" for 2 years.\n"
+            + HelpExampleCli("fundwitnessaccount \"mysavingsaccount\" \"mywitnessaccount\" \"100\" \"2y\"", "")
+            + "\nTake 250" GLOBAL_COIN_CODE " out of \"mysavingsaccount\" and lock in \"mywitnessaccount\" for 2 months.\n"
+            + HelpExampleCli("fundwitnessaccount \"mysavingsaccount\" \"mywitnessaccount\" \"250\" \"2m\"", "")
+            + "\nTake 150" GLOBAL_COIN_CODE " out of \"mysavingsaccount\" and lock in \"mywitnessaccount\" for 100 days.\n"
+            + HelpExampleCli("fundwitnessaccount \"mysavingsaccount\" \"mywitnessaccount\" \"150\" \"100d\"", "")
+            + HelpExampleRpc("fundwitnessaccount \"mysavingsaccount\" \"mywitnessaccount\" \"100\" \"2y\"", ""));
 
     int nPoW2TipPhase = GetPoW2Phase(chainActive.Tip());
 
@@ -1500,7 +1517,7 @@ static UniValue extendwitnessaddress(const JSONRPCRequest& request)
             "\nArguments:\n"
             "1. \"funding_account\"  (string, required) The unique UUID or label for the account from which money will be removed.\n"
             "2. \"witness_address\"  (string, required) The " GLOBAL_APPNAME " address for the witness key.\n"
-            "3. \"amount\"           (string, required) The amount of " GLOBAL_COIN_CODE " to hold locked in the witness account. Minimum amount of 5000 " GLOBAL_COIN_CODE " is allowed.\n"
+            "3. \"amount\"           (string, required) The amount of " GLOBAL_COIN_CODE " to hold locked in the witness account. Minimum amount of 50 " GLOBAL_COIN_CODE " is allowed.\n"
             "4. \"time\"             (string, required) The time period for which the funds should be locked in the witness account. By default this is interpreted as blocks e.g. \"1000\", suffix with \"y\", \"m\", \"w\", \"d\", \"b\" to specifically work in years, months, weeks, days or blocks.\n"
             "\nResult:\n"
             "[\n"
@@ -1508,8 +1525,8 @@ static UniValue extendwitnessaddress(const JSONRPCRequest& request)
             "     \"fee_amount\":n   (number) The fee that was paid.\n"
             "]\n"
             "\nExamples:\n"
-            + HelpExampleCli("extendwitnessaddress \"My account\" \"2ZnFwkJyYeEftAoQDe7PC96t2Y7XMmKdNtekRdtx32GNQRJztULieFRFwQoQqN\" \"50000\" \"2y\"", "")
-            + HelpExampleRpc("extendwitnessaddress \"My account\" \"2ZnFwkJyYeEftAoQDe7PC96t2Y7XMmKdNtekRdtx32GNQRJztULieFRFwQoQqN\" \"50000\" \"2y\"", ""));
+            + HelpExampleCli("extendwitnessaddress \"My account\" \"2ZnFwkJyYeEftAoQDe7PC96t2Y7XMmKdNtekRdtx32GNQRJztULieFRFwQoQqN\" \"120\" \"2y\"", "")
+            + HelpExampleRpc("extendwitnessaddress \"My account\" \"2ZnFwkJyYeEftAoQDe7PC96t2Y7XMmKdNtekRdtx32GNQRJztULieFRFwQoQqN\" \"120\" \"2y\"", ""));
 
     // Basic sanity checks.
     if (!pwallet)
@@ -1644,7 +1661,7 @@ static UniValue extendwitnessaccount(const JSONRPCRequest& request)
             "\nArguments:\n"
             "1. \"funding_account\" (string, required) The unique UUID or label for the account from which money will be removed.\n"
             "2. \"witness_account\" (string, required) The unique UUID or label for the witness account that will hold the locked funds.\n"
-            "3. \"amount\"          (string, required) The amount of " GLOBAL_COIN_CODE " to hold locked in the witness account. Minimum amount of 5000 " GLOBAL_COIN_CODE " is allowed.\n"
+            "3. \"amount\"          (string, required) The amount of " GLOBAL_COIN_CODE " to hold locked in the witness account. Minimum amount of 50 " GLOBAL_COIN_CODE " is allowed.\n"
             "4. \"time\"            (string, required) The time period for which the funds should be locked in the witness account. By default this is interpreted as blocks e.g. \"1000\", suffix with \"y\", \"m\", \"w\", \"d\", \"b\" to specifically work in years, months, weeks, days or blocks.\n"
             "\nResult:\n"
             "[\n"
@@ -1652,8 +1669,8 @@ static UniValue extendwitnessaccount(const JSONRPCRequest& request)
             "     \"fee_amount\":n  (string) The fee that was paid.\n"
             "]\n"
             "\nExamples:\n"
-            + HelpExampleCli("extendwitnessaccount \"My account\" \"My witness account\" \"50000\" \"2y\"", "")
-            + HelpExampleRpc("extendwitnessaccount \"My account\" \"My witness account\" \"50000\" \"2y\"", ""));
+            + HelpExampleCli("extendwitnessaccount \"My account\" \"My witness account\" \"120\" \"2y\"", "")
+            + HelpExampleRpc("extendwitnessaccount \"My account\" \"My witness account\" \"120\" \"2y\"", ""));
 
     // Basic sanity checks.
     if (!pwallet)
@@ -3291,8 +3308,8 @@ static UniValue setwitnesscompound(const JSONRPCRequest& request)
             "     \"amount\"                   (string) The amount that has been set.\n"
             "]\n"
             "\nExamples:\n"
-            + HelpExampleCli("setwitnesscompound \"My witness account\" 5", "")
-            + HelpExampleRpc("setwitnesscompound \"My witness account\" 10", ""));
+            + HelpExampleCli("setwitnesscompound \"My witness account\" 20", "")
+            + HelpExampleRpc("setwitnesscompound \"My witness account\" 20", ""));
 
     if (!pwallet)
         throw std::runtime_error("Cannot use command without an active wallet");
@@ -3355,58 +3372,6 @@ static UniValue getwitnesscompound(const JSONRPCRequest& request)
         throw std::runtime_error(strprintf("Specified account is not a witness account [%s].",  request.params[0].get_str()));
 
     return ValueFromAmount(forAccount->getCompounding());
-}
-
-static UniValue setwitnessrewardaddress(const JSONRPCRequest& request)
-{
-    #ifdef ENABLE_WALLET
-    CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
-    LOCK2(cs_main, pwallet ? &pwallet->cs_wallet : NULL);
-    #else
-    LOCK(cs_main);
-    #endif
-
-    if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
-        return NullUniValue;
-
-    if (request.fHelp || request.params.size() != 2 )
-        throw std::runtime_error(
-            "setwitnessrewardaddress \"witness_account\" \"destination\"\n"
-            "\nSet the output address into which all non-compound witness earnings will be paid.\n"
-            "\nSee \"setwitnesscompound\" for how to control compounding and additional information.\n"
-            "1. \"witness_account\"        (required) The unique UUID or label for the account.\n"
-            "2. \"destination\"           (required) An address. Set empty string to reset the reward script.\n"
-            "\nResult:\n"
-            "[\n"
-            "     \"account_uuid\",        (string) The UUID of the account that has been modified.\n"
-            "     \"amount\"               (string) The amount that has been set.\n"
-            "]\n"
-            "\nExamples:\n"
-            + HelpExampleCli("setwitnessrewardscript \"my witness account\" \"Vb5YMjiTA9BUYi9zPToKg3wAAdrpHNp1V2hSBVHpgLMm9sPojhnX\"", "")
-            + HelpExampleRpc("setwitnessrewardscript \"my witness account\" \"Vb5YMjiTA9BUYi9zPToKg3wAAdrpHNp1V2hSBVHpgLMm9sPojhnX\"", ""));
-
-    CAccount* forAccount = AccountFromValue(pwallet, request.params[0], false);
-
-    if (!forAccount)
-        throw std::runtime_error("Invalid account name or UUID");
-
-    if (!forAccount->IsPoW2Witness())
-        throw std::runtime_error(strprintf("Specified account is not a witness account [%s].",  request.params[0].get_str()));
-
-    CScript scriptForNonCompoundPayments;
-    CNativeAddress address(request.params[1].get_str());
-    if (address.IsValid()) {
-        scriptForNonCompoundPayments = GetScriptForDestination(address.Get());
-    }
-
-    CWalletDB walletdb(*pwallet->dbw);
-    forAccount->setNonCompoundRewardScript(scriptForNonCompoundPayments, &walletdb);
-
-    witnessScriptsAreDirty = true;
-
-    UniValue result(UniValue::VOBJ);
-    result.pushKV(getUUIDAsString(forAccount->getUUID()), HexStr(forAccount->getNonCompoundRewardScript()));
-    return result;
 }
 
 static UniValue setwitnessrewardscript(const JSONRPCRequest& request)
@@ -3925,7 +3890,9 @@ static const CRPCCommand commandsFull[] =
     { "witness",                 "getwitnessaddresskeys",           &getwitnessaddresskeys,          true,    {"witness_address"} },
     { "witness",                 "getwitnesscompound",              &getwitnesscompound,             true,    {"witness_account"} },
     { "witness",                 "getwitnessinfo",                  &getwitnessinfo,                 true,    {"block_specifier", "verbose", "mine_only"} },
+#ifdef WITNESS_HEADER_SYNC
     { "witness",                 "getwitnessutxo",                  &getwitnessutxo,                 true,    {"block_specifier"} },
+#endif
     { "witness",                 "getwitnessrewardscript",          &getwitnessrewardscript,         true,    {"witness_account"} },
     { "witness",                 "importwitnesskeys",               &importwitnesskeys,              true,    {"account_name", "encoded_key_url", "create_account"} },
     { "witness",                 "mergewitnessaccount",             &mergewitnessaccount,            true,    {"funding_account", "witness_account"} },
@@ -3934,7 +3901,6 @@ static const CRPCCommand commandsFull[] =
     { "witness",                 "renewwitnessaccount",             &renewwitnessaccount,            true,    {"funding_account", "witness_account"} },
     { "witness",                 "setwitnesscompound",              &setwitnesscompound,             true,    {"witness_account", "amount"} },
     { "witness",                 "setwitnessrewardscript",          &setwitnessrewardscript,         true,    {"witness_account", "pubkey_or_script", "force_pubkey"} },
-    { "witness",                 "setwitnessrewardaddress",         &setwitnessrewardaddress,         true,   {"witness_account", "pubkey_or_script"} },
     { "witness",                 "setwitnessrewardtemplate",        &setwitnessrewardtemplate,       true,    {"witness_account", "reward_template"} },
     { "witness",                 "getwitnessrewardtemplate",        &getwitnessrewardtemplate,       true,    {"witness_account" } },
     { "witness",                 "splitwitnessaccount",             &splitwitnessaccount,            true,    {"funding_account", "witness_account", "amounts"} },
@@ -3968,7 +3934,6 @@ static const CRPCCommand commandsFull[] =
 static const CRPCCommand commandsSPV[] =
 { //  category                   name                               actor (function)                 okSafeMode
   //  ---------------------      ------------------------           -----------------------          ----------
-    
     { "support",                 "resetdatadirpartial",             &resetdatadirpartial,            true,    {""} },
     { "support",                 "resetdatadirfull",                &resetdatadirfull,               true,    {""} },
     { "support",                 "resetconfig",                     &resetconfig,                    true,    {""} },

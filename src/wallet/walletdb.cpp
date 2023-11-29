@@ -1386,6 +1386,75 @@ DBErrors CWalletDB::ZapSelectTx(std::vector<uint256>& vTxHashIn, std::vector<uin
     return DB_LOAD_OK;
 }
 
+DBErrors CWalletDB::ZapAllTx()
+{
+    bool fNoncriticalErrors = false;
+    DBErrors result = DB_LOAD_OK;
+
+    try {
+        int nMinVersion = 0;
+        if (batch.Read((std::string)"minversion", nMinVersion))
+        {
+            if (nMinVersion > CLIENT_VERSION)
+                return DB_TOO_NEW;
+        }
+
+        // Get cursor
+        Dbc* pcursor = batch.GetCursor();
+        if (!pcursor)
+        {
+            LogPrintf("Error getting wallet database cursor\n");
+            return DB_CORRUPT;
+        }
+
+        std::vector<std::pair<std::string, uint256>> eraseVec;
+        while (true)
+        {
+            // Read next record
+            CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+            CDataStream ssValue(SER_DISK, CLIENT_VERSION);
+            int ret = batch.ReadAtCursor(pcursor, ssKey, ssValue);
+            if (ret == DB_NOTFOUND)
+                break;
+            else if (ret != 0)
+            {
+                LogPrintf("Error reading next record from wallet database\n");
+                return DB_CORRUPT;
+            }
+
+            std::string strType;
+            ssKey >> strType;
+            if (strType == "wtx")
+            {
+                uint256 hash;
+                ssKey >> hash;
+                eraseVec.push_back(std::pair(std::string("tx"), hash));
+                eraseVec.push_back(std::pair(std::string("wtx"), hash));
+            }
+        }
+        pcursor->close();
+        for (const auto& erasePair : eraseVec)
+        {
+            EraseIC(erasePair);
+        }
+    }
+    catch (const boost::thread_interrupted&)
+    {
+        throw;
+    }
+    catch (...)
+    {
+        result = DB_CORRUPT;
+    }
+
+    if (fNoncriticalErrors && result == DB_LOAD_OK)
+    {
+        result = DB_NONCRITICAL_ERROR;
+    }
+
+    return result;
+}
+
 DBErrors CWalletDB::ZapWalletTx(std::vector<CWalletTx>& vWtx)
 {
     // build list of wallet TXs

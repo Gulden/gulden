@@ -1796,7 +1796,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
         // Disconnect any peers that are not yet synced beyond the last checkpoint height
         // They will only slow the sync down
-        if (IsInitialBlockDownload())
+        if (!IsArgSet("-testnet") && IsInitialBlockDownload())
         {
             if (pfrom->nStartingHeight < Checkpoints::LastCheckPointHeight() && Checkpoints::LastCheckPointHeight() != 0)
             {
@@ -2257,7 +2257,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         vRecv >> height >> num;
 
         LOCK(cs_main);
-        if (IsInitialBlockDownload() && !pfrom->fWhitelisted && !IsArgSet("-regtest"))
+        if (IsInitialBlockDownload() && !pfrom->fWhitelisted && !IsArgSet("-regtest") && !IsArgSet("-testnet"))
         {
             LogPrint(BCLog::NET, "Ignoring getrheaders from peer=%d because node is in initial block download\n", pfrom->GetId());
             return true;

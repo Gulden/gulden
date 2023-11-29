@@ -59,6 +59,7 @@
 
 //fixme: (PHASE5) - we can remove these includes after phase4 activation.
 #include "witnessutil.h"
+#include "validation/validation.h"
 
 std::vector<CWalletRef> vpwallets;
 CWalletRef pactiveWallet = NULL;
@@ -1124,7 +1125,6 @@ void CWallet::HandleTransactionsLoaded()
 {
     for  (const auto& [hash, wtx] : mapWallet)
     {
-        (unused) hash;
         for (const CTxIn& txin : wtx.tx->vin)
         {
             const CWalletTx* prevtx = GetWalletTx(txin.GetPrevOut());
@@ -2632,9 +2632,12 @@ void CWallet::ListLockedCoins(std::vector<COutPoint>& vOutpts) const
 }
 
 
-void CWallet::CompareWalletAgainstUTXO(int& nMismatchFound, int& nOrphansFound, int64_t& nBalanceInQuestion, bool attemptRepair)
+void CWallet::CompareWalletAgainstUTXO(int& nMismatchFound, int& nWalletMissingUTXO, int& nWalletSpentCoinsStillInUTXO, int& nWalletCoinsNotInUTXO, int& nOrphansFound, int64_t& nBalanceInQuestion, bool attemptRepair)
 {
     nMismatchFound = 0;
+    nWalletMissingUTXO = 0;
+    nWalletSpentCoinsStillInUTXO = 0;
+    nWalletCoinsNotInUTXO = 0;
     nBalanceInQuestion = 0;
     nOrphansFound = 0;
 
@@ -2663,6 +2666,7 @@ void CWallet::CompareWalletAgainstUTXO(int& nMismatchFound, int& nOrphansFound, 
                 {
                     LogPrintf("CompareWalletAgainstUTXO: Found a utxo that is ours but that isn't in wallet %s %s[%d]\n", FormatMoney(utxoCoin.out.nValue).c_str(), utxoOutpoint.getTransactionHash().ToString().c_str(), utxoOutpoint.n);
                     nMismatchFound++;
+                    nWalletMissingUTXO++;
                     nBalanceInQuestion += utxoCoin.out.nValue;
                 }
             }
@@ -2680,7 +2684,7 @@ void CWallet::CompareWalletAgainstUTXO(int& nMismatchFound, int& nOrphansFound, 
         if(walletCoin->IsCoinBase() && (walletCoin->GetDepthInMainChain() < 0))
         {
            nOrphansFound++;
-           printf("CompareWalletAgainstUTXO: Found orphaned generation tx [%s]\n", hash.ToString().c_str());
+           LogPrintf("CompareWalletAgainstUTXO: Found orphaned generation tx [%s]\n", hash.ToString().c_str());
         }
         else
         {
@@ -2695,6 +2699,7 @@ void CWallet::CompareWalletAgainstUTXO(int& nMismatchFound, int& nOrphansFound, 
                     if(outputSpentInWallet && outputIsInUTXO)
                     {
                         LogPrintf("CompareWalletAgainstUTXO: Found wallet-spent coins that are in the utxo and therefore shouldn't be spent %s %s[%d]\n", FormatMoney(walletCoin->tx->vout[n].nValue).c_str(), hash.ToString().c_str(), n);
+                        nWalletSpentCoinsStillInUTXO++;
                         nMismatchFound++;
                         nBalanceInQuestion += walletCoin->tx->vout[n].nValue;
                     }
@@ -2708,7 +2713,8 @@ void CWallet::CompareWalletAgainstUTXO(int& nMismatchFound, int& nOrphansFound, 
                             hashesToErase.push_back(walletCoinOutpoint.getTransactionHash());
                             pactiveWallet->ZapSelectTx(walletdb, hashesToErase, hashesErased);
                         }
-                        printf("CompareWalletAgainstUTXO: Found wallet-unspent coins that aren't in the chain utxo and therefore should be spent %s %s[%ld]\n", FormatMoney(walletCoin->tx->vout[n].nValue).c_str(), hash.ToString().c_str(), n);
+                        LogPrintf("CompareWalletAgainstUTXO: Found wallet-unspent coins that aren't in the chain utxo and therefore should be spent %s %s[%ld]\n", FormatMoney(walletCoin->tx->vout[n].nValue).c_str(), hash.ToString().c_str(), n);
+                        nWalletCoinsNotInUTXO++;
                         nMismatchFound++;
                         nBalanceInQuestion += walletCoin->tx->vout[n].nValue;
                     }

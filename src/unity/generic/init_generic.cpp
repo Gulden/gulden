@@ -253,6 +253,23 @@ void ServerShutdown(node::NodeContext& nodeContext)
 {
 }
 
+static void OnRPCStarted()
+{
+}
+
+static void OnRPCStopped()
+{
+}
+
+static void OnRPCPreCommand(const CRPCCommand& cmd)
+{
+}
+
+static bool AppInitServers()
+{
+    return true;
+}
+
 bool InitRPCWarmup()
 {
     return true;

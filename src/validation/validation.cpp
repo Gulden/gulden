@@ -138,6 +138,8 @@ static void CheckBlockIndex(const Consensus::Params& consensusParams);
 /** Constant stuff for coinbase transactions we create: */
 CScript COINBASE_FLAGS;
 
+int64_t nMinimumInputValue = DUST_HARD_LIMIT;
+
 const std::string strMessageMagic = "Gulden Signed Message:\n";
 
 std::set<CBlockIndex*, CBlockIndexWorkComparator> setBlockIndexCandidates;
@@ -701,25 +703,6 @@ int ApplyTxInUndo(CoinUndo&& undo, CCoinsViewCache& view, COutPoint out)
         fClean = false; // overwriting transaction output
     }
 
-    if (undo.nHeight == 0)
-    {
-        // Missing undo metadata (height and coinbase). Older versions included this
-        // information only in undo records for the last spend of a transactions'
-        // outputs. This implies that it must be present for some other output of the same tx.
-        uint256 txHash;
-        if (!GetTxHash(out, txHash))
-            return DISCONNECT_FAILED; // adding output for transaction without known metadata
-        const Coin& alternate = AccessByTxid(view, txHash);
-        if (!alternate.IsSpent()) 
-        {
-            undo.nHeight = alternate.nHeight;
-            undo.fCoinBase = alternate.fCoinBase;
-        }
-        else
-        {
-            return DISCONNECT_FAILED; // adding output for transaction without known metadata
-        }
-    }
     view.AddCoin(out, std::move(undo), undo.fCoinBase);
 
     return fClean ? DISCONNECT_OK : DISCONNECT_UNCLEAN;
@@ -887,40 +870,12 @@ static int64_t nTimeIndex = 0;
 static int64_t nTimeCallbacks = 0;
 static int64_t nTimeTotal = 0;
 
-/*
-void LogWitnessInfo(CGetWitnessInfo witInfo)
-{
-    LogPrintf("witinfo>>>\n");
-    LogPrintf("filtered:\n");
-    for (const auto& item : witInfo.witnessSelectionPoolFiltered)
-    {
-        LogPrintf("outpoint %d\n", item.outpoint.n);
-        LogPrintf("coin %d\n", item.coin.nHeight);
-        LogPrintf("weight %s\n", item.nWeight);
-        LogPrintf("age %s\n", item.nAge);
-        LogPrintf("cumulative %s\n", item.nCumulativeWeight);
-    }
-    LogPrintf("unfiltered:\n");
-    for (const auto& item : witInfo.witnessSelectionPoolUnfiltered)
-    {
-        LogPrintf("outpoint %d\n", item.outpoint.n);
-        LogPrintf("coin %d\n", item.coin.nHeight);
-        LogPrintf("weight %s\n", item.nWeight);
-        LogPrintf("age %s\n", item.nAge);
-        LogPrintf("cumulative %s\n", item.nCumulativeWeight);
-    }
-    LogPrintf("<<<witinfo\n");
-}*/
-
 /** Apply the effects of this block (with given index) on the UTXO set represented by coins.
  *  Validity checks that depend on the UTXO set are also done; ConnectBlock()
  *  can fail if those validity checks fail (among other reasons). */
 bool ConnectBlock(CChain& chain, const CBlock& block, CValidationState& state, CBlockIndex* pindex,
-                  CCoinsViewCache& view, const CChainParams& chainparams, bool fJustCheck, bool fVerifyWitness, bool fVerifyWitnessDelta, bool fDoScriptChecks)
+                  CCoinsViewCache& view, const CChainParams& chainparams, bool fJustCheck, bool fVerifyWitness, bool fDoScriptChecks)
 {
-    //Force disable witness delta for now
-    fVerifyWitnessDelta = false;
-
     if (!ContextualCheckBlock(block, state, chainparams, pindex->pprev, chain, &view, true))
         return error("%s: Consensus::CheckBlock, failed ContextualCheckBlock with utxo check: %s", __func__, FormatStateMessage(state));
 
@@ -974,7 +929,7 @@ bool ConnectBlock(CChain& chain, const CBlock& block, CValidationState& state, C
     }
 
     bool fScriptChecks = true;
-    if (!hashAssumeValid.IsNull())
+    if (pindex->nHeight != 0 && !hashAssumeValid.IsNull())
     {
         // We've been configured with the hash of a block which has been externally verified to have a valid history.
         // A suitable default value is included with the software and updated from time to time.  Because validity
@@ -1030,10 +985,8 @@ bool ConnectBlock(CChain& chain, const CBlock& block, CValidationState& state, C
     // time BIP34 activated, in each of the existing pairs the duplicate coinbase had overwritten the first
     // before the first had been spent.  Since those coinbases are sufficiently buried its no longer possible to create further
     // duplicate transactions descending from the known pairs either.
-    // If we're on the known chain at height greater than where BIP34 activated, we can save the db accesses needed for the BIP30 check.
-    CBlockIndex *pindexBIP34height = pindex->pprev ? pindex->pprev->GetAncestor(chainparams.GetConsensus().BIP34Height) : pindex;
     //Only continue to enforce if we're below BIP34 activation height or the block hash at that height doesn't correspond.
-    fEnforceBIP30 = fEnforceBIP30 && (!pindexBIP34height || !(pindexBIP34height->GetBlockHashPoW2() == chainparams.GetConsensus().BIP34Hash));
+    fEnforceBIP30 = pindex->nHeight >= chainparams.GetConsensus().BIP34Height;
 
     if (fEnforceBIP30)
     {
@@ -1080,7 +1033,6 @@ bool ConnectBlock(CChain& chain, const CBlock& block, CValidationState& state, C
 
     CBlockUndo blockundo;
 
-    CPubKey witnessPubKey;
     //fixme: (PHASE5) Ideally this would be placed lower down (just before CAmount blockReward = nFees + nSubsidy;) 
     //However GetWitness calls recursively into ConnectBlock and CCheckQueueControl has a non-recursive mutex - so we must call this before creating 
     // Witness block must have valid signature from witness.
@@ -1088,19 +1040,19 @@ bool ConnectBlock(CChain& chain, const CBlock& block, CValidationState& state, C
     {
         if (block.nVersionPoW2Witness != 0)
         {
+            CPubKey pubkey;
             uint256 hash = block.GetHashPoW2();
-            if (!witnessPubKey.RecoverCompact(hash, block.witnessHeaderPoW2Sig))
+            if (!pubkey.RecoverCompact(hash, block.witnessHeaderPoW2Sig))
                 return state.DoS(50, false, REJECT_INVALID, "invalid-witness-signature", false, "witness signature validation failed");
 
-            // Prefer delta verification where possible
-            if (fVerifyWitness && !fVerifyWitnessDelta)
+            if (fVerifyWitness)
             {
                 CGetWitnessInfo witInfo;
                 if (!GetWitness(chain, chainparams, &view, pindex->pprev, block, witInfo))
                     return state.DoS(100, false, REJECT_INVALID, "invalid-witness", false, "could not determine a valid witness for block");
                 if(witInfo.selectedWitnessTransaction.GetType() == CTxOutType::PoW2WitnessOutput)
                 {
-                    if (witInfo.selectedWitnessTransaction.output.witnessDetails.witnessKeyID != witnessPubKey.GetID())
+                    if (witInfo.selectedWitnessTransaction.output.witnessDetails.witnessKeyID != pubkey.GetID())
                         return state.DoS(100, false, REJECT_INVALID, "invalid-witness-signature", false, "witness signature incorrect for block");
                 }
                 else
@@ -1131,13 +1083,6 @@ bool ConnectBlock(CChain& chain, const CBlock& block, CValidationState& state, C
                 if (block.vtx[i]->IsCoinBase() && block.vtx[i]->IsPoW2WitnessCoinBase())
                 {
                     nWitnessCoinbaseIndex = i;
-                    if ((uint64_t)pindex->nHeight > chainparams.GetConsensus().pow2Phase5FirstBlockHeight)
-                    {
-                        if (block.vtx[i]->vout.size() == 0 || block.vtx[i]->vout[0].GetType() != CTxOutType::PoW2WitnessOutput)
-                        {
-                            return state.DoS(100, error("ConnectBlock(): PoW2 witness coinbase invalid output position)"), REJECT_INVALID, "bad-witness-cb");
-                        }
-                    }
                     break;
                 }
             }
@@ -1148,24 +1093,6 @@ bool ConnectBlock(CChain& chain, const CBlock& block, CValidationState& state, C
                     return state.DoS(100, error("ConnectBlock(): PoW2 witness coinbase missing)"), REJECT_INVALID, "bad-witness-cb");
                 }
             }
-        }
-    }
-    
-    //NB! This must occur before CCheckQueueControl variable "control", to prevent CCheckQueueControl re-entrancy as GetSimplifiedWitnessUTXOSetForIndex calls into connectblock which lands us back here
-    //Having two CCheckQueueControl instances simultaneously deadlocks the entire software
-    //
-    //Ideally this would be called just before or as part of GetSimplifiedWitnessUTXODeltaForBlock instead
-    //
-    //fixme: (WITNESS_SYNC) - See if we can solve this re-entrancy issue
-    //Note the block above this one has a similar problem so look into that at same time.
-    //
-    std::shared_ptr<SimplifiedWitnessUTXOSet> pow2SimplifiedWitnessUTXOForPrevBlock = nullptr;
-    if (fVerifyWitnessDelta && block.nVersionPoW2Witness != 0 && (uint64_t)pindex->nHeight > chainparams.GetConsensus().pow2Phase5FirstBlockHeight)
-    {
-        pow2SimplifiedWitnessUTXOForPrevBlock = std::make_shared<SimplifiedWitnessUTXOSet>();
-        if (!GetSimplifiedWitnessUTXOSetForIndex(pindex->pprev, *pow2SimplifiedWitnessUTXOForPrevBlock))
-        {
-            return state.DoS(100, error("ConnectBlock(): Unable to compute simplified witness utxo for block"), REJECT_INVALID, "bad-witness-utxo");
         }
     }
 
@@ -1255,18 +1182,16 @@ bool ConnectBlock(CChain& chain, const CBlock& block, CValidationState& state, C
         txdata.emplace_back(tx);
 
         CWitnessBundles bundles;
+        assert(GetSpendHeight(view) == pindex->nHeight);
         if ((uint64_t)pindex->nHeight > chainparams.GetConsensus().pow2Phase5FirstBlockHeight)
         {
-            assert(GetSpendHeight(view) == pindex->nHeight);
-            if (!BuildWitnessBundles(tx, state, GetSpendHeight(view), txIndex,
-                    [&](const COutPoint& outpoint, CTxOut& txOut, uint64_t& txHeight, uint64_t& txIndex_, uint64_t& txOutputIndex) -> bool {
+            if (!BuildWitnessBundles(tx, state, pindex->nHeight,
+                    [&](const COutPoint& outpoint, CTxOut& txOut, int& txHeight) -> bool {
                         const Coin& coin = view.AccessCoin(outpoint);
                         if (coin.IsSpent())
                             return false;
                         txOut = coin.out;
                         txHeight = coin.nHeight;
-                        txIndex_ = coin.nTxIndex;
-                        txOutputIndex = outpoint.n;
                         return true;
                     },
                     bundles))
@@ -1310,56 +1235,6 @@ bool ConnectBlock(CChain& chain, const CBlock& block, CValidationState& state, C
     }
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs]\n", (unsigned)block.vtx.size(), 0.001 * (nTime3 - nTime2), 0.001 * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : 0.001 * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * 0.000001);
-
-
-    //Forbid any transactions that would affect the witness set from occuring after the witness coinbase index
-    //As this would present complications for the "simplified witness set" accounting
-    if ((uint64_t)pindex->nHeight > chainparams.GetConsensus().pow2WitnessSyncHeight && nWitnessCoinbaseIndex != 0)
-    {
-        for (unsigned int i = nWitnessCoinbaseIndex+1; i < block.vtx.size(); i++)
-        {
-            if (!block.vtx[i]->witnessBundles || block.vtx[i]->witnessBundles->size()>0)
-            {
-                return state.DoS(100, error("ConnectBlock(): Witness related transaction after witness coinbase)"), REJECT_INVALID, "bad-witness-transactions");
-            }
-        }
-    }
-
-    //Check that the actual witness changes contained in the block match those described in the header as populated by the witness
-    //
-    //fixme: (FUT): We could consider some kind of active penalty for a witness caught doing this
-    //Though whether there is really a need or reason to go that far is not clear, that it won't succeed is likely a large enough deterrent.
-    //fixme: (WITNESS_SYNC) - Change this check to pow2WitnessSyncHeight after we have more testing in place
-    if (fVerifyWitnessDelta && block.nVersionPoW2Witness != 0 && (uint64_t)pindex->nHeight > chainparams.GetConsensus().pow2Phase5FirstBlockHeight)
-    {
-        if ((uint64_t)pindex->nHeight > chainparams.GetConsensus().pow2WitnessSyncHeight)
-        {
-            if (!witnessPubKey.IsValid())
-                return state.DoS(50, false, REJECT_INVALID, "invalid-witness-signature", false, "witness signature validation failed");
-
-            std::vector<unsigned char> compWitnessUTXODelta;
-            if (!GetSimplifiedWitnessUTXODeltaForBlock(pindex, block, pow2SimplifiedWitnessUTXOForPrevBlock, compWitnessUTXODelta, &witnessPubKey))
-            {
-                return state.DoS(100, error("ConnectBlock(): Unable to compute witness delta for block"), REJECT_INVALID, "bad-witness-utxo-delta");
-            }
-            if (!std::equal(compWitnessUTXODelta.begin(), compWitnessUTXODelta.end(), block.witnessUTXODelta.begin()))
-            {
-                return state.DoS(100, error("ConnectBlock(): PoW2 simplified witness delta incorrect"), REJECT_INVALID, "bad-witness-utxo-delta");
-            }
-        }
-        else
-        {
-            std::vector<unsigned char> compWitnessUTXODelta;
-            if (!GetSimplifiedWitnessUTXODeltaForBlock(pindex, block, pow2SimplifiedWitnessUTXOForPrevBlock, compWitnessUTXODelta, nullptr))
-            {
-                return state.DoS(100, error("ConnectBlock(): Unable to compute witness delta for block"), REJECT_INVALID, "bad-witness-utxo-delta");
-            }
-            if (block.witnessUTXODelta.size() > 0)
-            {
-                return state.DoS(100, error("ConnectBlock(): PoW2 simplified witness delta before activation"), REJECT_INVALID, "premature-witness-utxo-delta");
-            }
-        }
-    }
 
     //fixme: (PHASE5) (CLEANUP) - We can remove this after phase4 becomes active.
 
@@ -1425,19 +1300,13 @@ bool ConnectBlock(CChain& chain, const CBlock& block, CValidationState& state, C
     
     if (nSubsidyDev > 0)
     {
-        std::string devSubsidyAddressFinal = devSubsidyAddress1;
-        if (nSubsidyDev > 1'000'000*COIN)
-        {
-            devSubsidyAddressFinal = devSubsidyAddress2;
-        }
-
         // Phase 4 - Must have 2 outputs (miner, dev) - witness in seperate transaction
         if ((IsSegSigEnabled(pindex->pprev) && block.vtx[0]->vout.size() != 2))
         {
             return state.DoS(100, error("ConnectBlock(): coinbase has incorrect number of outputs (actual=%d vs limit=%d)", block.vtx[0]->vout.size(), 2), REJECT_INVALID, "bad-cb-amount");
         }
         
-        static std::vector<unsigned char> data(ParseHex(devSubsidyAddressFinal));
+        static std::vector<unsigned char> data(ParseHex(devSubsidyAddress));
         static CPubKey pubKeyDevSubsidyCheck(data.begin(), data.end());
         static CScript scriptDevSubsidyCheck = (CScript() << ToByteVector(pubKeyDevSubsidyCheck) << OP_CHECKSIG);
         if (block.vtx[0]->vout[1].output.nType == CTxOutType::StandardKeyHashOutput)
@@ -1501,7 +1370,7 @@ bool ConnectBlock(CChain& chain, const CBlock& block, CValidationState& state, C
     }
 
     if (fTxIndex)
-        if (!pblocktree->WriteTxIndex(vPos))
+        if (!pblocktree->WriteTxIndex(vPos, pindex->nHeight))
             return AbortNode(state, "Failed to write transaction index");
 
     // add this block to the view's block chain
@@ -1659,8 +1528,7 @@ bool FlushStateToDisk(const CChainParams& chainparams, CValidationState &state, 
                 setDirtyBlockIndex.erase(it++);
             }
             LogPrintf("%s: updating %d and deleting %d block indexes, prune height = %d\n", __func__, vBlocks.size(), removals.size(), nManualPruneHeight);
-            std::set<std::pair<uint256, CDiskTxPos>> unusedEmptySet;
-            if (!pblocktree->UpdateBatchSync(vFiles, nLastBlockFile, vBlocks, removals, unusedEmptySet, unusedEmptySet )) {
+            if (!pblocktree->UpdateBatchSync(vFiles, nLastBlockFile, vBlocks, removals)) {
                 return AbortNode(state, "Failed to write to block index database");
             }
             uiInterface.NotifySPVPrune(nPartialPruneHeightDone);
@@ -1773,7 +1641,7 @@ void static UpdateTip(CBlockIndex *pindexNew, const CChainParams& chainParams) {
         }
     }
     //fixme: (PHASE5) - Replace this 1000000 constant with a chainparams paramater so we remember to update it.
-    if(!gbMinimalLogging || !warningMessages.empty() || Params().IsTestnet() || chainActive.Height() % 1000 == 0 || chainActive.Height() > 1000000)
+    if(!gbMinimalLogging || !warningMessages.empty() || IsArgSet("-testnet") || chainActive.Height() % 1000 == 0 || chainActive.Height() > 1000000)
     {
         LogPrintf("%s: new best=%s height=%d version=0x%08x versionpow2=0x%08x log2_work=%.8g tx=%lu date='%s' progress=%f cache=%.1fMiB(%utxo)", __func__,
             chainActive.Tip()->GetBlockHashPoW2().ToString(), chainActive.Height(), chainActive.Tip()->nVersion, chainActive.Tip()->nVersionPoW2Witness,
@@ -1952,7 +1820,7 @@ bool static ConnectTip(CValidationState& state, const CChainParams& chainparams,
         // 2) An attacker would still have to meet all other PoW check *and* keep all witness states intact
         // This is enough to ensure that an attacker would have to go to great lengths for what would amount to a minor nuisance (having to refetch some more headers after detecting wrong chain)
         // So this is not really a major weakening of security in any way and still more than sufficient.
-        if ((uint64_t)pindexNew->nHeight < std::max((uint64_t)Checkpoints::LastCheckPointHeight(), (uint64_t)1859000))
+        if (((uint64_t)pindexNew->nHeight < (uint64_t)Checkpoints::LastCheckPointHeight()))
             fValidateWitness = false;
         bool rv = ConnectBlock(chainActive, blockConnecting, state, pindexNew, view, chainparams, fJustCheck, fValidateWitness);
         GetMainSignals().BlockChecked(blockConnecting, state);
@@ -2525,7 +2393,6 @@ static bool PromoteBlockIndex(CBlockIndex* pindexNew, const CBlockHeader& header
     pindexNew->nTimePoW2Witness = header.nTimePoW2Witness;
     pindexNew->hashMerkleRootPoW2Witness = header.hashMerkleRootPoW2Witness;
     pindexNew->witnessHeaderPoW2Sig = header.witnessHeaderPoW2Sig;
-    pindexNew->witnessUTXODelta = header.witnessUTXODelta;
     pindexNew->nVersion       = header.nVersion;
     pindexNew->hashMerkleRoot = header.hashMerkleRoot;
     pindexNew->nTime          = header.nTime;
@@ -2851,33 +2718,12 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     return true;
 }
 
-static bool CheckIndexAgainstCheckpoint(const CBlockIndex* pindexPrev, CValidationState& state, const CChainParams& chainparams, const uint256& hash)
-{
-    if (*pindexPrev->phashBlock == chainparams.GetConsensus().hashGenesisBlock)
-        return true;
-
-    int nHeight = pindexPrev->nHeight+1;
-    
-    // Don't accept any forks from the main chain prior to last checkpoint.
-    // GetLastCheckpoint finds the last checkpoint in MapCheckpoints that's in our
-    // MapBlockIndex.
-    CBlockIndex* pcheckpoint = Checkpoints::GetLastCheckpointIndex();
-    if (pcheckpoint && nHeight < pcheckpoint->nHeight)
-        return state.DoS(100, error("%s: forked chain older than last checkpoint (height %d)", __func__, nHeight), REJECT_CHECKPOINT, "bad-fork-prior-to-checkpoint");
-
-    return true;
-}
-
 // We go for a cheap check here, instead of checking for phase 4 (which can be expensive and lead to problems) 
 // We instead just check if the previous block is a witness block (if it is we are in phase 4 as this isn't allowed in other phases.
 bool IsSegSigEnabled(const CBlockIndex* pindexPrev)
 {
     LOCK(cs_main);
-    if (!pindexPrev)
-        return false;
-    if (pindexPrev->nVersionPoW2Witness != 0)
-        return true;
-    return false;
+    return true;
 }
 
 
@@ -2894,18 +2740,20 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
 
     // Check timestamp against prev
     if (block.GetBlockTime() <= pindexPrev->GetMedianTimePastWitness())
-        return state.Invalid(false, REJECT_INVALID, "time-too-old", "blocks PoW timestamp is too early");
+        return state.DoS(20, false, REJECT_INVALID, "time-too-old", "blocks PoW timestamp is too early");
 
     // Check timestamp
-    if (pindexPrev->nHeight > (fTestNet ? 446500 : 437500) )
+    if (nAdjustedTime > 1652097600)
     {
+        if (block.GetBlockTime() > nAdjustedTime + (MAX_FUTURE_BLOCK_TIME*2))
+            return state.DoS(100, false, REJECT_INVALID, "time-too-new", "block timestamp way too far in the future");
         if (block.GetBlockTime() > nAdjustedTime + MAX_FUTURE_BLOCK_TIME)
-            return state.Invalid(false, REJECT_INVALID, "time-too-new", "block timestamp too far in the future");
+            return state.DoS(20, false, REJECT_INVALID, "time-too-new", "block timestamp too far in the future");
     }
     else
     {
         if (block.GetBlockTime() > nAdjustedTime + 15 * 60)
-            return state.Invalid(false, REJECT_INVALID, "time-too-new", "block timestamp too far in the future");
+            return state.DoS(20, false, REJECT_INVALID, "time-too-new", "block timestamp too far in the future");
     }
 
     if (block.nVersionPoW2Witness != 0)
@@ -2914,6 +2762,13 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
         {
             return state.Invalid(false, REJECT_INVALID, "time-too-old", "blocks witness timestamp is too early");
         }
+        if (nAdjustedTime > 1652097600)
+        {
+            if (block.nTimePoW2Witness > nAdjustedTime + (MAX_FUTURE_BLOCK_TIME*2))
+                return state.DoS(100, false, REJECT_INVALID, "time-too-new", "blocks witness timestamp way too far in the future");
+            if (block.nTimePoW2Witness > nAdjustedTime + MAX_FUTURE_BLOCK_TIME)
+                return state.DoS(20, false, REJECT_INVALID, "time-too-new", "block witness timestamp too far in the future");
+        }
         if (block.hashMerkleRootPoW2Witness == uint256())
         {
             return state.Invalid(false, REJECT_INVALID, "witness-merkle-invalid", "block sets null witness merkle root");
@@ -2921,13 +2776,6 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
         if ( std::all_of(block.witnessHeaderPoW2Sig.begin(), block.witnessHeaderPoW2Sig.end(), [](auto c){return c==0;}) )
         {
             return state.Invalid(false, REJECT_INVALID, "witness-signature-invalid", "block sets null witness signature");
-        }
-        if ((int64_t)pindexPrev->nHeight > (int64_t)Params().GetConsensus().pow2WitnessSyncHeight)
-        {
-            if (block.witnessUTXODelta.size() == 0)
-            {
-                return state.Invalid(false, REJECT_INVALID, "witness-utxo-delta-invalid", "block has no witness utxo delta");
-            }
         }
     }
     else
@@ -2943,10 +2791,6 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
         if ( !std::all_of(block.witnessHeaderPoW2Sig.begin(), block.witnessHeaderPoW2Sig.end(), [](auto c){return c==0;}) )
         {
             return state.Invalid(false, REJECT_INVALID, "witness-signature-invalid", "block sets witness signature without witness version");
-        }
-        if (block.witnessUTXODelta.size() > 0)
-        {
-            return state.Invalid(false, REJECT_INVALID, "witness-utxo-delta-invalid", "block sets witness utxo delta without witness version");
         }
     }    
 
@@ -3157,8 +3001,6 @@ static bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state
             return state.DoS(100, error("%s: prev block invalid", __func__), REJECT_INVALID, "bad-prevblk");
 
         assert(pindexPrev);
-        if (fCheckpointsEnabled && !CheckIndexAgainstCheckpoint(pindexPrev, state, chainparams, hash))
-            return error("%s: CheckIndexAgainstCheckpoint(): %s, %s", __func__, hash.ToString(), state.GetRejectReason().c_str());
 
         // do context check if block header connects to the full tree or when we have at least the required amount of partial tree available
         bool doContextCheck = pindexPrev->IsValid(BLOCK_VALID_TREE) || ((pindexPrev->IsPartialValid(BLOCK_PARTIAL_TREE)) && pindexPrev->nHeight - partialChain.HeightOffset() > 576);
@@ -3857,119 +3699,8 @@ bool static LoadBlockIndexDB(const CChainParams& chainparams)
 bool UpgradeBlockIndex(const CChainParams& chainparams, int nPreviousVersion, int nCurrentVersion)
 {
     // Any future upgrade code goes here.
-    // Refresh all blocks on disk - change in serialisation format.
-    if (nPreviousVersion == 3 && nCurrentVersion >= 4)
-    {
-         LOCK(cs_main);
-                
-        blockStore.CloseBlockFiles();
+    // See source control history for previous implementations that might be reusable.
 
-        CBlockStore oldStore;
-
-        oldStore.Rename("prewitsync_");
-
-        {
-            LOCK(cs_LastBlockFile);
-            vinfoBlockFile.clear();
-            nLastBlockFile = 0;
-        }
-
-        // (Optimisation) Sort by height so that the files end up "in order" in the new block files.
-        std::vector<std::pair<int, CBlockIndex*> > vSortedByHeight;
-        vSortedByHeight.reserve(mapBlockIndex.size());
-        for(const PAIRTYPE(uint256, CBlockIndex*)& item : mapBlockIndex)
-        {
-            CBlockIndex* pindex = item.second;
-            vSortedByHeight.push_back(std::pair(pindex->nHeight, pindex));
-        }
-        sort(vSortedByHeight.begin(), vSortedByHeight.end(), [](const std::pair<int, CBlockIndex*>& a, const std::pair<int, CBlockIndex*>& b) -> bool { return a.first < b.first; });
-
-        // Now read the block files in one at a time from the old files and write them into the new files.
-        CBlock* pblock = new CBlock();
-        std::vector<std::pair<int, const CBlockFileInfo*> > vDirtyFiles;
-        std::vector<const CBlockIndex*> vDirtyBlocks;
-        std::map<CDiskBlockPos, CDiskBlockPos> vUpdateTxIndexes;
-        for(const auto& item: vSortedByHeight)
-        {
-            CBlockIndex* pindex = item.second;
-            pblock->SetNull();
-
-            CDiskBlockPos oldBlockPos = pindex->GetBlockPos();
-            CDiskBlockPos oldUndoPos = pindex->GetUndoPos();
-            if (oldBlockPos.nFile >= 0)
-            {
-                vDirtyFiles.push_back(std::pair(pindex->nFile, &vinfoBlockFile[pindex->nFile]));
-                // Read block in, using old transaction format.
-                {
-                    if (!oldStore.ReadBlockFromDisk(*pblock, oldBlockPos, chainparams, nullptr, SERIALIZE_BLOCK_HEADER_NO_WITNESS_DELTA))
-                        return error("UpgradeBlockIndex: ReadBlockFromDisk: Errors in block at %s", oldBlockPos.ToString());
-                }
-
-                // Write block out using new transaction format.
-                {
-                    unsigned int nSize = ::GetSerializeSize(*pblock, SER_DISK, CLIENT_VERSION);
-                    CValidationState state;
-                    CDiskBlockPos blockpos;
-                    FindBlockPos(state, blockpos, nSize+8, pindex->nHeight, pblock->GetBlockTime());
-                    if (!blockStore.WriteBlockToDisk(*pblock, blockpos, chainparams.MessageStart()))
-                        return error("UpgradeBlockIndex: WriteBlockToDisk: failed");
-                    pindex->nFile = blockpos.nFile;
-                    pindex->nDataPos = blockpos.nPos;
-                    
-                    // Update the tx index as well as those reference the block disk positions...
-                    vUpdateTxIndexes[oldBlockPos] = blockpos;
-                }
-                
-                CDiskBlockPos newUndoPos;
-                if (pindex->nStatus & BLOCK_HAVE_UNDO)
-                {
-                    CBlockUndo undo;
-                    if (!oldUndoPos.IsNull())
-                    {
-                        if (!oldStore.UndoReadFromDisk(undo, oldUndoPos, pindex->pprev->GetBlockHashPoW2()))
-                            return error("UpgradeBlockIndex(): *** found bad undo data at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHashPoW2().ToString());
-
-                        pindex->nUndoPos = 0;
-                        CValidationState state;
-                        if (!FindUndoPos(state, pindex->nFile, newUndoPos, ::GetSerializeSize(undo, SER_DISK, CLIENT_VERSION) + 40))
-                            return error("ConnectBlock(): FindUndoPos failed");
-                        if (!blockStore.UndoWriteToDisk(undo, newUndoPos, pindex->pprev->GetBlockHashPoW2(), chainparams.MessageStart()))
-                            return AbortNode(state, "Failed to write undo data");
-
-                        // update nUndoPos in block index
-                        pindex->nUndoPos = newUndoPos.nPos;
-                    }
-                }
-                
-                // Update the block index as the position of the block on disk has changed.
-                {
-                    vDirtyBlocks.push_back(pindex);
-                    vDirtyFiles.push_back(std::pair(pindex->nFile, &vinfoBlockFile[pindex->nFile]));
-                }
-            }
-        }
-        delete pblock;
-
-        FlushBlockFile();
-        
-        std::set<std::pair<uint256, CDiskTxPos> > vWriteTxIndexes;
-        std::set<std::pair<uint256, CDiskTxPos> > vEraseTxIndexes;
-        
-        if (!pblocktree->MoveTxIndexDiskPos(vUpdateTxIndexes, vEraseTxIndexes, vWriteTxIndexes))
-            return error("UpgradeBlockIndex: Failed to calculate update to block transaction index database");
-        
-        if (!pblocktree->UpdateBatchSync(vDirtyFiles, nLastBlockFile, vDirtyBlocks, std::vector<uint256>(), vEraseTxIndexes, vWriteTxIndexes))
-        {
-            return error("UpgradeBlockIndex: Failed to write to block index database");
-        }
-
-        oldStore.Delete();
-        return true;
-    }
-    else if (nPreviousVersion != nCurrentVersion)
-    {
-        return false;
-    }
     return true;
 }
 
@@ -4274,7 +4005,7 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
     int nLoaded = 0;
     try {
         // This takes over fileIn and calls fclose() on it in the CBufferedFile destructor
-        CBufferedFile blkdat(fileIn, 2*MAX_BLOCK_SERIALIZED_SIZE, MAX_BLOCK_SERIALIZED_SIZE+8, SER_DISK, CLIENT_VERSION-1);
+        CBufferedFile blkdat(fileIn, 2*MAX_BLOCK_SERIALIZED_SIZE, MAX_BLOCK_SERIALIZED_SIZE+8, SER_DISK, CLIENT_VERSION);
         uint64_t nRewind = blkdat.GetPos();
         while (!blkdat.eof()) {
             boost::this_thread::interruption_point();
@@ -4331,7 +4062,7 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                     //Note: an attacker would still have to meet/break/forge the sha ppev hash checks for an entire chain from the checkpoints
                     // This is enough to ensure that an attacker would have to go to great lengths for what would amount to a minor nuisance (having to refetch some data after detecting wrong chain)
                     // So this is not really a major weakening of security in any way and still more than sufficient.
-                    if (mapBlockIndex.find(block.hashPrevBlock)->second->nHeight < Checkpoints::LastCheckPointHeight())
+                    if (hash != chainparams.GetConsensus().hashGenesisBlock && mapBlockIndex.find(block.hashPrevBlock)->second->nHeight < Checkpoints::LastCheckPointHeight())
                     {
                         fAssumePOWGood = true;
                     }
@@ -4445,7 +4176,7 @@ void static CheckBlockIndex(const Consensus::Params& consensusParams)
         // Begin: actual consistency checks.
         if (pindex->pprev == NULL) {
             // Genesis block checks.
-            assert(pindex->GetBlockHashLegacy() == consensusParams.hashGenesisBlock); // Genesis block's hash must match.
+            assert(pindex->GetBlockHashPoW2() == consensusParams.hashGenesisBlock); // Genesis block's hash must match.
             assert(pindex == chainActive.Genesis()); // The current active chain's genesis block must be this block.
         }
         if (pindex->nChainTx == 0) assert(pindex->nSequenceId <= 0);  // nSequenceId can't be set positive for blocks that aren't linked (negative is used for preciousblock)

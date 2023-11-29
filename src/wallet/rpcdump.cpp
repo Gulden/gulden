@@ -637,20 +637,25 @@ UniValue checkwalletagainstutxo(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    int nMismatchSpent;
-    int nOrphansFound;
-    int64_t nBalanceInQuestion;
-    pwallet->CompareWalletAgainstUTXO(nMismatchSpent, nOrphansFound, nBalanceInQuestion);
+    int nMismatchFound=0;
+    int nWalletMissingUTXO = 0;
+    int nWalletSpentCoinsStillInUTXO = 0;
+    int nWalletCoinsNotInUTXO = 0;
+    int nOrphansFound=0;
+    int64_t nBalanceInQuestion=0;
+    pwallet->CompareWalletAgainstUTXO(nMismatchFound, nWalletMissingUTXO, nWalletSpentCoinsStillInUTXO, nWalletCoinsNotInUTXO, nOrphansFound, nBalanceInQuestion);
     UniValue result(UniValue::VOBJ);
-    if(!nMismatchSpent && !nOrphansFound)
+    if(!nMismatchFound && !nOrphansFound)
     {
         result.pushKV("wallet check passed", true);
     }
     else
     {
-        if(nMismatchSpent)
+        if(nMismatchFound)
         {
-            result.pushKV("mismatched spent coins", nMismatchSpent);
+            result.pushKV("coins in UTXO but not in wallet", nWalletMissingUTXO);
+            result.pushKV("coins spent in wallet but are in UTXO", nWalletSpentCoinsStillInUTXO);
+            result.pushKV("coins in wallet but not in UTXO", nWalletCoinsNotInUTXO);
             result.pushKV("amount in question", ValueFromAmount(nBalanceInQuestion));
         }
         if(nOrphansFound)
@@ -675,10 +680,13 @@ UniValue repairwalletfromutxo(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    int nMismatchSpent;
-    int nOrphansFound;
-    int64_t nBalanceInQuestion;
-    pwallet->CompareWalletAgainstUTXO(nMismatchSpent, nOrphansFound, nBalanceInQuestion, true);
+    int nMismatchFound=0;
+    int nWalletMissingUTXO = 0;
+    int nWalletSpentCoinsStillInUTXO = 0;
+    int nWalletCoinsNotInUTXO = 0;
+    int nOrphansFound=0;
+    int64_t nBalanceInQuestion=0;
+    pwallet->CompareWalletAgainstUTXO(nMismatchFound, nWalletMissingUTXO, nWalletSpentCoinsStillInUTXO, nWalletCoinsNotInUTXO, nOrphansFound, nBalanceInQuestion, true);
     return NullUniValue;
 }
 

@@ -12,7 +12,7 @@
 //fixme: (PHASE5) - Properly document all of these; including pre/post conditions;
 //fixme: (PHASE5) implement unit tests.
 
-
+#ifdef WITNESS_HEADER_SYNC
 // Encapusulate the bare minimum information we need to know about every witness address in order to select/verify a valid witness for a block
 // Without any of the additional information thats necessary for other parts of the witness system (e.g. spending key) but not this specific function
 // And without information that can be derived from this core information (e.g. age)
@@ -125,11 +125,14 @@ public:
 SimplifiedWitnessUTXOSet GenerateSimplifiedWitnessUTXOSetFromUTXOSet(std::map<COutPoint, Coin> allWitnessCoinsIndexBased);
 bool GetSimplifiedWitnessUTXOSetForIndex(const CBlockIndex* pBlockIndex, SimplifiedWitnessUTXOSet& pow2SimplifiedWitnessUTXOForBlock);
 bool GetSimplifiedWitnessUTXODeltaForBlock(const CBlockIndex* pBlockIndexPrev, const CBlock& block, std::shared_ptr<SimplifiedWitnessUTXOSet> pow2SimplifiedWitnessUTXOForPrevBlock, std::vector<unsigned char>& compWitnessUTXODelta, CPubKey* pubkey);
+#endif
 
 /** Global variable that points to the witness coins database (protected by cs_main) */
 extern CWitViewDB* ppow2witdbview;
 extern std::shared_ptr<CCoinsViewCache> ppow2witTip;
+#ifdef WITNESS_HEADER_SYNC
 extern SimplifiedWitnessUTXOSet pow2SimplifiedWitnessUTXO;
+#endif
 
 struct RouletteItem
 {
@@ -213,14 +216,16 @@ uint64_t expectedWitnessBlockPeriod(uint64_t nWeight, uint64_t networkTotalWeigh
 // The average frequency which we are expected to witness in.
 uint64_t estimatedWitnessBlockPeriod(uint64_t nWeight, uint64_t networkTotalWeight);
 
-bool getAllUnspentWitnessCoins(CChain& chain, const CChainParams& chainParams, const CBlockIndex* pPreviousIndexChain, std::map<COutPoint, Coin>& allWitnessCoins, CBlock* newBlock=nullptr, CCoinsViewCache* viewOverride=nullptr, bool forceIndexBased=false);
+bool getAllUnspentWitnessCoins(CChain& chain, const CChainParams& chainParams, const CBlockIndex* pPreviousIndexChain, std::map<COutPoint, Coin>& allWitnessCoins, CBlock* newBlock=nullptr, CCoinsViewCache* viewOverride=nullptr);
 
 bool GetWitnessHelper(uint256 blockHash, CGetWitnessInfo& witnessInfo, uint64_t nBlockHeight);
 
 bool GetWitnessInfo(CChain& chain, const CChainParams& chainParams, CCoinsViewCache* viewOverride, CBlockIndex* pPreviousIndexChain, CBlock block, CGetWitnessInfo& witnessInfo, uint64_t nBlockHeight);
 
 bool GetWitness(CChain& chain, const CChainParams& chainParams, CCoinsViewCache* viewOverride, CBlockIndex* pPreviousIndexChain, CBlock block, CGetWitnessInfo& witnessInfo);
+#ifdef WITNESS_HEADER_SYNC
 bool GetWitnessFromSimplifiedUTXO(SimplifiedWitnessUTXOSet simplifiedWitnessUTXO, const CBlockIndex* pBlockIndex, CGetWitnessInfo& witnessInfo);
+#endif
 
 bool witnessHasExpired(uint64_t nWitnessAge, uint64_t nWitnessWeight, uint64_t nNetworkTotalWitnessWeight);
 

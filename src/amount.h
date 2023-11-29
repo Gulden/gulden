@@ -35,8 +35,10 @@ static const CAmount MICROCOIN     =       100;
  * critical; in unusual circumstances like a(nother) overflow bug that allowed
  * for the creation of coins out of thin air modification could lead to a fork.
  * */
-//fixme: (PHASE5) Relook at this constant - I don't think the value here is actually right/ideal.
-static const CAmount MAX_MONEY = 1680000000 * COIN;
-inline bool MoneyRange(const CAmount& nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
+static const CAmount MAX_MONEY = 400'000'000 * COIN;
+
+// Larger constant needed for MoneyRange so that genesis block can pass validation
+static const CAmount MAX_MONEY_GENESIS = 1'928'950'000 * COIN;
+inline bool MoneyRange(const CAmount& nValue) { return (nValue >= 0 && nValue <= MAX_MONEY_GENESIS); }
 
 #endif

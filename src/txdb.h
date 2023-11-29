@@ -69,7 +69,8 @@ struct CDiskTxPos : public CDiskBlockPos
         CDiskBlockPos::SetNull();
         nTxOffset = 0;
     }
-    
+
+    #ifdef WITNESS_HEADER_SYNC    
     friend bool operator< (const CDiskTxPos a, const CDiskTxPos b)
     {
         if ((CDiskBlockPos)a < (CDiskBlockPos)b)
@@ -80,6 +81,7 @@ struct CDiskTxPos : public CDiskBlockPos
             return true;
         return false;
     }
+    #endif
 };
 
 /** CCoinsView backed by the coin database (chainstate/) */
@@ -119,12 +121,18 @@ public:
     
     size_t EstimateSize() const override;
     // For handling of upgrades.
+    #ifdef WITNESS_HEADER_SYNC
     uint32_t nCurrentVersion=4;
+    #else
+    uint32_t nCurrentVersion=3;
+    #endif
     uint32_t nPreviousVersion=1;
 
     void GetAllCoins(std::map<COutPoint, Coin>& allCoins) const override;
+    #ifdef WITNESS_HEADER_SYNC
     void GetAllCoinsIndexBased(std::map<COutPoint, Coin>& allCoins) const override;
     void GetAllCoinsIndexBasedDirect(std::map<COutPoint, Coin>& allCoins) const override;
+    #endif
 };
 
 /** CWitViewDB backed by the witness database (witstate/) */
@@ -167,21 +175,16 @@ private:
 public:
     bool UpdateBatchSync(const std::vector<std::pair<int, const CBlockFileInfo*> >& fileInfo, int nLastFile,
                          const std::vector<const CBlockIndex*>& vWriteIndices,
-                         const std::vector<uint256>& vEraseHashes,
-                         const std::set<std::pair<uint256, CDiskTxPos>>& vEraseTxIndexes,
-                         const std::set<std::pair<uint256, CDiskTxPos>>& vWriteTxIndexes
-                        );
+                         const std::vector<uint256>& vEraseHashes);
     bool EraseBatchSync(const std::vector<uint256>& vEraseHashes);
-    // Populate vEraseTxIndexes/vWriteTxIndexes with proposed changes (if any) for a moved CDiskBlockPos
-    // Note this doesn't actually perform the changes, to do that pass the returned results into 'UpdateBatchSync'
-    // NB! This must iterate the entire set for each call so is relatively slow
-    bool MoveTxIndexDiskPos(std::map<CDiskBlockPos, CDiskBlockPos> vUpdateTxIndexes, std::set<std::pair<uint256, CDiskTxPos>>& vEraseTxIndexes, std::set<std::pair<uint256, CDiskTxPos>>& vWriteTxIndexes);
     bool ReadBlockFileInfo(int nFile, CBlockFileInfo &fileinfo);
     bool ReadLastBlockFile(int &nFile);
     bool WriteReindexing(bool fReindex);
     bool ReadReindexing(bool &fReindex);
     bool ReadTxIndex(const uint256 &txid, CDiskTxPos &pos);
-    bool WriteTxIndex(const std::vector<std::pair<uint256, CDiskTxPos> > &list);
+    //NB! This is only for RPC code and similar (display purposes) and only works when txindex is enabled. DO NOT call this in any validation or similar code
+    uint256 ReadTxIndexRef(uint64_t nBlockHeight, uint64_t nPos);
+    bool WriteTxIndex(const std::vector<std::pair<uint256, CDiskTxPos> > &list, uint64_t nHeight);
     bool WriteFlag(const std::string &name, bool fValue);
     bool ReadFlag(const std::string &name, bool &fValue);
     bool LoadBlockIndexGuts(std::function<CBlockIndex*(const uint256&)> insertBlockIndex);
