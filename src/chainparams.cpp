@@ -117,7 +117,7 @@ public:
         pchMessageStart[1] = 0xfe; // 'L' + 0xb0
         pchMessageStart[2] = 0xfc; // 'N' + 0xb0
         pchMessageStart[3] = 0xe0; // 0xe0 (e for "echt", testnet has 0x02 as last byte)
-        vAlertPubKey = ParseHex("073513ffe7147aba88d33aea4da129d8a2829c545526d5d854ab51d5778f4d0625431ba1c5a3245bdfe8736b127fdfdb488de72640727d37355c4c3a66c547efad");
+        vAlertPubKey = ParseHex("04751d3e0f8cd684c9f1cd911b4ae5a5e7724a2e7e5de88629b9b4c697ed6d31cecc5c30d0b66d02d57f78d8db39b955f01eb33a1fd88b02329a74feb579cbef5d");
         nDefaultPort = 9241;
         nPruneAfterHeight = 200000;
         
@@ -140,13 +140,13 @@ public:
                 txNew.vin[0].segregatedSignatureData.stack.clear();
                 txNew.vin[0].segregatedSignatureData.stack.push_back(std::vector<unsigned char>());
                 CVectorWriter(0, 0, txNew.vin[0].segregatedSignatureData.stack[0], 0) << VARINT(0);
-                txNew.vin[0].segregatedSignatureData.stack.push_back({'F','M'});
+                txNew.vin[0].segregatedSignatureData.stack.push_back({'W','e',' ','k','n','o','w','.'});
                 
                 {
                     CKeyID pubKeyIDWitness;
-                    pubKeyIDWitness.SetHex("624dc502c2dee9b3b4596371200832cdb92672f1");
+                    pubKeyIDWitness.SetHex("fd5324645d8188f65a3bc29b05476061b152fd6b");
                     CKeyID pubKeyIDSpend;
-                    pubKeyIDSpend.SetHex("7e62e8262266147ce4ce98d43c58f61b9418bfea");
+                    pubKeyIDSpend.SetHex("aca746a8999a17e18877decc9efaa9a1423cfa73");
 
                     CTxOut renewedWitnessTxOutput;
                     renewedWitnessTxOutput.SetType(CTxOutType::PoW2WitnessOutput);
@@ -180,9 +180,9 @@ public:
                     txNew.vout.push_back(subsidyOutput);
                 }
 
-                genesis.nTime    = 1701239350;
+                genesis.nTime    = 1701342000;
                 genesis.nBits    = arith_uint256((~arith_uint256(0) >> 10)).GetCompact();
-                genesis.nNonce   = 1107361822;
+                genesis.nNonce   = 468451342;
                 genesis.nVersion = 536870912;
                 genesis.vtx.push_back(MakeTransactionRef(std::move(txNew)));
                 genesis.hashPrevBlock.SetNull();
@@ -194,6 +194,8 @@ public:
                 genesis.nVersionPoW2Witness = genesis.nVersion;
             }
         }
+        consensus.hashGenesisBlock = genesis.GetHashPoW2();
+        
         /*uint256 foundBlockHash;
         std::atomic<uint64_t> halfHashCounter=0;
         bool interrupt=false;
@@ -207,12 +209,10 @@ public:
         printf("genesis hash: %s\n", consensus.hashGenesisBlock.ToString().c_str());
         printf("genesis hashMerkleRoot: %s\n", genesis.hashMerkleRoot.ToString().c_str());
         printf("genesis hashMerkleRootPoW2Witness: %s\n", genesis.hashMerkleRootPoW2Witness.ToString().c_str());*/
-
-        consensus.hashGenesisBlock = genesis.GetHashPoW2();
         
-        assert(consensus.hashGenesisBlock == uint256S("0c54c6233b72dbd8ebbf0e5baf3624f0390b7c42217be7032523252ffefc88292a"));
-        assert(genesis.hashMerkleRoot == uint256S("0xe91e0d6b1223b0861b9148c9a97d23aba897250deb394b9cce4f31ce1b00ec6c"));
-        assert(genesis.hashMerkleRootPoW2Witness == uint256S("0xe91e0d6b1223b0861b9148c9a97d23aba897250deb394b9cce4f31ce1b00ec6c"));
+        assert(consensus.hashGenesisBlock == uint256S("0x40dc47783aba5cd13865d5ad862d83a039982f601ed8bdb424078052bf20b5ab"));
+        assert(genesis.hashMerkleRoot == uint256S("0xd8bd48dc5df5779f23086509fe4d4de48e848151ec65f2e0f59050c065f7f191"));
+        assert(genesis.hashMerkleRootPoW2Witness == uint256S("0xd8bd48dc5df5779f23086509fe4d4de48e848151ec65f2e0f59050c065f7f191"));
 
         vSeeds.push_back(CDNSSeedData("seed 0",  "seed0.gulden.com", false));
         vSeeds.push_back(CDNSSeedData("seed 2",  "seed1.gulden.com", false));

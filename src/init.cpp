@@ -1008,14 +1008,52 @@ bool AppInitParameterInteraction()
     if (IsArgSet("-genkeypair"))
     {
         ECC_Start();
+
+        {
         CKey key;
         key.MakeNewKey(false);
 
         CPrivKey vchPrivKey = key.GetPrivKey();
-        printf("PrivateKey %s\n", HexStr<CPrivKey::iterator>(vchPrivKey.begin(), vchPrivKey.end()).c_str());
+        printf("PrivateKey alert %s\n", HexStr<CPrivKey::iterator>(vchPrivKey.begin(), vchPrivKey.end()).c_str());
         CPubKey vchPubKey = key.GetPubKey();
         vchPubKey.Decompress();
-        printf("PublicKey %s\n", HexStr(vchPubKey.begin(), vchPubKey.end()).c_str());
+        printf("PublicKey alert %s\n", HexStr(vchPubKey.begin(), vchPubKey.end()).c_str());
+        }
+        CKey key_witness_witness;
+        key_witness_witness.MakeNewKey(true);
+        CPrivKey vchPrivKey_witness_witness = key_witness_witness.GetPrivKey();
+        CPubKey vchPubKey_witness_witness = key_witness_witness.GetPubKey();
+        std::string privkey_witness_witness = HexStr<CPrivKey::iterator>(vchPrivKey_witness_witness.begin(), vchPrivKey_witness_witness.end()).c_str();
+        std::string pubKeyID_witness_witness = vchPubKey_witness_witness.GetID().GetHex();
+        std::string witnessKeys = GLOBAL_APP_URIPREFIX"://witnesskeys?keys=" + CEncodedSecretKey(key_witness_witness).ToString() + strprintf("#%s", GetAdjustedTime());
+
+        CKey key_witness_spend;
+        key_witness_spend.MakeNewKey(true);
+        CPrivKey vchPrivKey_witness_spend = key_witness_spend.GetPrivKey();
+        CPubKey vchPubKey_witness_spend = key_witness_spend.GetPubKey();
+        std::string privkey_witness_spend = HexStr<CPrivKey::iterator>(vchPrivKey_witness_spend.begin(), vchPrivKey_witness_spend.end()).c_str();
+        std::string pubKeyID_witness_spend = vchPubKey_witness_spend.GetID().GetHex();
+
+        CKey key_dev_subsidy;
+        key_dev_subsidy.MakeNewKey(true);
+        CPrivKey vchPrivKey_dev_subsidy = key_dev_subsidy.GetPrivKey();
+        CPubKey vchPubKey_dev_subsidy = key_dev_subsidy.GetPubKey();
+        std::string privkey_dev_subsidy = HexStr<CPrivKey::iterator>(vchPrivKey_dev_subsidy.begin(), vchPrivKey_dev_subsidy.end()).c_str();
+        std::string pubKey_dev_subsidy = HexStr(vchPubKey_dev_subsidy);
+        std::string pubKeyID_dev_subsidy = vchPubKey_dev_subsidy.GetID().GetHex();
+
+        printf("%s", ("privkey_witness_witness: "+privkey_witness_witness+"\n\n"
+           +"privkey_encoded_witness_witness: "+CEncodedSecretKey(key_witness_witness).ToString()+"\n\n"
+           +"pubkeyID_witness_witness: "+pubKeyID_witness_witness+"\n\n"
+           +"witness: "+witnessKeys+"\n\n"
+           +"privkey_witness_spend: "+privkey_witness_spend+"\n\n"
+           +"privkey_encoded_witness_spend: "+CEncodedSecretKey(key_witness_spend).ToString()+"\n\n"
+           +"pubkeyID_witness_spend: "+pubKeyID_witness_spend+"\n\n"
+           +"dev_subsidy_address: "+CNativeAddress(vchPubKey_dev_subsidy.GetID()).ToString()+"\n\n"
+           +"privkey_dev_subsidy: "+privkey_dev_subsidy+"\n\n"
+           +"privkey_encoded_dev_subsidy: "+CEncodedSecretKey(key_dev_subsidy).ToString()+"\n\n"
+           +"pubkey_dev_subsidy: "+pubKey_dev_subsidy+"\n\n"
+           +"pubkeyID_dev_subsidy: "+pubKeyID_dev_subsidy+"\n\n").c_str());
 
         exit(EXIT_SUCCESS);
     }
