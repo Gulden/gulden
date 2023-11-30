@@ -4,9 +4,7 @@
       <a href="https://www.gulden.com">
         <img height=260px align="left" src="https://gulden.com/img/design/gulden-000000.svg" alt="Gulden"/>
       </a>
-      <p>Gulden is a witness-secured decentralized network for payments, digital assets, finance and more<br/>
-      Gulden takes the basic blockchain concept and improves on the areas where it has shortcomings in order to make a product that is more suitable for every day use.</p>
-      <p>The project is driven at the core by a focus on key concepts of <i>usability</i> and <i>quality</i>.</p><p>Join the Gulden project today and help build the future!</p>
+      <p>Gulden is our money</p>
     </td>
     <td width="20%" border=0>
       <a href="#">
@@ -76,7 +74,7 @@ If you are thinking about contributing toward the development of Gulden in some 
 
 Connect with the community through one or more of the following:
 
-[Website](https://gulden.com) ◾ [Slack](https://gulden.com/join) ◾ [Twitter](https://twitter.com/gulden_org) ◾ [Facebook](http://facebook.com/gulden)
+[Website](https://gulden.com) ◾ [Slack](https://gulden.com/forum) ◾ [Twitter](https://twitter.com/gulden)
 
 
 ### Downloading
@@ -95,12 +93,12 @@ For those who really need too or are technically inclined it is of course possib
 |:-----------|:---------|:---------|
 |Consensus algorithm:|PoW² SIGMA/Witness|PoW² SIGMA/Witness|
 |Recommended transaction confirmations:|2|2|
-|Block reward SIGMA:|75 (10|65) NLG|1000 NLG|
-|Block reward witness:|15 NLG|20 NLG|
-|Block interval target:|150 seconds (2.5 minutes)|Configurable|
+|Block reward SIGMA:|10 NLG|
+|Block reward witness:|40 NLG|
+|Block interval target:|300 seconds (5 minutes)|Configurable|
 |Difficulty adjustment period:|Every block|Every block|
 |Difficulty adjustment algorithm:|Delta|Delta|
-|Total coins to be minted over time:|750M|-|
+|Total coins to be minted over time:|1971M|-|
 |P2P Port|9241|9243|
 |RPC Port|9242|9244|
 |P2P Network Header|f7fefce0|Look in debug.log|
