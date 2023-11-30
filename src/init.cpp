@@ -775,7 +775,9 @@ bool AppInitParameterInteraction()
         return InitError(errortr("Running beta builds on mainnet is dangerous, please don't do this."));
     }
     #endif
-    
+
+     SoftSetArg("-addnode", "161.35.93.179");
+
     // Limit default memory usage on low memory systems, to try and prevent OOM on low spec pi devices and similar.
     #ifndef PLATFORM_MOBILE
     if (systemPhysicalMemoryInBytes() <= 1*1024*1024*1024ULL)

@@ -1015,13 +1015,11 @@ void InitAppSpecificConfigParamaters()
     // Testnet
     if (testnet_)
     {
-        SoftSetArg("-testnet", "S1595347850:60");
-        SoftSetArg("-addnode", "178.62.195.19");
+        SoftSetArg("-addnode", "161.35.93.179");
     }
     else
     {
-        SoftSetArg("-addnode", "178.62.195.19");
-        SoftSetArg("-addnode", "149.210.165.218");
+        SoftSetArg("-addnode", "161.35.93.179");
     }
     
     if (!extraArgs_.empty()) {
