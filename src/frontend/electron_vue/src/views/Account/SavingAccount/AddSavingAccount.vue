@@ -10,11 +10,11 @@
           <select-list :options="fundingAccounts" :default="fundingAccount" v-model="fundingAccount" />
         </app-form-field>
         <app-form-field title="common.amount">
-          <input type="number" min="50" v-model="amount" :max="maxAmountForAccount" :class="amountClass" />
+          <input type="number" min="50000" v-model="amount" :max="maxAmountForAccount" :class="amountClass" />
         </app-form-field>
         <app-form-field title="add_saving_account.lock_for">
           <div class="flex-row">
-            <vue-slider :min="2" :max="36" class="lock-time-slider" :class="lockTimeClass" :value="lockTimeInMonths" v-model="lockTimeInMonths" />
+            <vue-slider :min="3" :max="48" class="lock-time-slider" :class="lockTimeClass" :value="lockTimeInMonths" v-model="lockTimeInMonths" />
             <div class="lock-time-info">{{ lockTimeInMonths }} {{ $t("common.months") }}</div>
           </div>
         </app-form-field>
@@ -73,8 +73,8 @@ export default {
       networkLimits: null,
       accountName: "",
       fundingAccount: null,
-      amount: 50,
-      lockTimeInMonths: 36
+      amount: 50000,
+      lockTimeInMonths: 48
     };
   },
   computed: {
@@ -83,7 +83,7 @@ export default {
       return this.amount < parseInt(this.networkLimits.minimum_witness_amount) || this.amount > this.maxAmountForAccount ? "error" : "";
     },
     fundingAccounts() {
-      return this.accounts.filter(x => x.state === "Normal" && ["Desktop", "Mining"].indexOf(x.type) !== -1 && x.balance >= 50);
+      return this.accounts.filter(x => x.state === "Normal" && ["Desktop", "Mining"].indexOf(x.type) !== -1 && x.balance >= 50000);
     },
     maxAmountForAccount() {
       return this.fundingAccount
@@ -91,7 +91,7 @@ export default {
         : 0;
     },
     lockTimeInBlocks() {
-      return this.lockTimeInMonths * (this.networkLimits.maximum_lock_period_blocks / 36);
+      return this.lockTimeInMonths * (this.networkLimits.maximum_lock_period_blocks / 48);
     },
     isWeightSufficient() {
       return this.estimatedWeight.weight >= this.networkLimits.minimum_witness_weight;
