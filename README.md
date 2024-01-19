@@ -106,7 +106,7 @@ For those who really need too or are technically inclined it is of course possib
 |P2SH version byte|98 (g)|127 (t)|
 |BIP44 coin type|87 0x80000057|87 0x80000057|
 |**Infrastructure**|**Main network**|**[Testnet](./technical_documentation/accelerated_testnet.md#official-testnet)**|
-|Community block explorer|https://blockchain.gulden.com/|-|
+|Community block explorer|https://blockchain.gulden.com|-|
 |Community block explorer|https://gulden.network|-|
 |DNS Seed 1|seed1.gulden.com|-|
 |DNS Seed 2|seed2.gulden.com|-|
